@@ -1,23 +1,23 @@
-'use strict';
+'use	strict';
 
-const request = require('request');
+const	request	=	require('request');
 
-module.exports = class {
-	constructor(apiToken) {
-		this.apiToken = apiToken;
+module.exports	=	class	{
+	constructor(apiToken)	{
+		this.apiToken	=	apiToken;
 	}
 
-	listTasks() {
-		return new Promise((resolve, reject) => {
+	listTasks()	{
+		return	new	Promise((resolve,	reject)	=>	{
 			request.get({
-				url: 'https://beta.todoist.com/API/v8/tasks', 
-				headers: {
-					'Authorization': 'Bearer ' + this.apiToken
+				url:	'https://beta.todoist.com/API/v8/tasks',	
+				headers:	{
+					'Authorization':	'Bearer	'	+	this.apiToken
 				}
-			}, (err, res) => {
-				if (err) {
+			},	(err,	res)	=>	{
+				if	(err)	{
 					reject(err);
-				} else {
+				}	else	{
 					resolve(JSON.parse(res.body));
 				}
 			});	

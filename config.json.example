@@ -1,0 +1,9 @@
+{
+    "habitica": {
+        "apiUser": "",
+        "apiKey": ""
+    },
+    "todoist": {
+        "token": "" 
+    }
+}

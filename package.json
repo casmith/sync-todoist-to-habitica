@@ -9,10 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "request": "^2.83.0"
-  },
-  "devDependencies": {
     "lodash": "^4.17.5",
+    "request": "^2.83.0",
     "request-promise": "^4.2.2"
   }
 }

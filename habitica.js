@@ -29,7 +29,7 @@ module.exports = class {
                 } else {
                     resolve(JSON.parse(res.body));
                 }
-            });	
+            }); 
         });
 
     }

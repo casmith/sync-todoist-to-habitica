@@ -16,12 +16,9 @@ module.exports = class {
     }
 
     createTask (task) {
+        console.log('createing task', task)
         return this.request.post({
             url: 'https://habitica.com/api/v3/tasks/user',
-            headers: {
-                ['x-api-user']: this.apiUser,
-                ['x-api-key']: this.apiKey
-            }, 
             form: {
                 type: 'todo',
                 text: task.content,
@@ -37,10 +34,23 @@ module.exports = class {
         });
     }
 
+    deleteTasks (taskIds) {
+        return Promise.all(taskIds.map(taskId => this.deleteTask(taskId)));
+    }
+
     listTasks() {
         return this.request.get({
-            url: 'https://habitica.com/api/v3/tasks/user' 
+            url: 'https://habitica.com/api/v3/tasks/user?type=todos'
         })
         .then(response => JSON.parse(response).data);
+    }
+
+    userCast () {
+    }
+
+    scoreTask (taskId) {
+        return this.request.post({
+            url: `https://habitica.com/api/v3/tasks/${taskId}/score/up`
+        });
     }
 }

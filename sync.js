@@ -14,40 +14,67 @@ module.exports = function (todoist, habitica) {
 
     const lastRun = jsonFile.readFileSync('lastRun.json', {throws: false}) || {};
 
+    const config = require('./config.json');
+
+    const createHabiticaTask = function (todoistTask) {
+        return {
+            content: todoistTask.content, 
+            alias: todoistTask.id,
+            priority: priorityMap[todoistTask.priority]
+        }
+    }
+
+    const getSyncData = function (config, syncToken) {
+        return todoist.sync(syncToken)
+            .then(sync => {
+                config.sync = sync;
+                return config;
+            });
+    };
+
+    const getProjects = function (config) {
+        return todoist.listProjects()
+            .then(projects => {
+                config.projects = projects;
+                return config;
+            });
+    };
+
+    const isTaskRecurring = function (item) {
+        return !_.includes(item.date_string, 'every');
+    };
+
+    const filterIgnoredProjects = function (config) {
+        const ignoreProjectIds = config.ignoreProjects.map(projectName => {
+            return _.keyBy(config.projects, 'name')[projectName].id
+        });
+        return function (item) {
+            const projectId = item.project_id;
+            return !_.includes(ignoreProjectIds, projectId);
+        }
+    }
+
     return habitica.listTasks()
-        // .then(tasks => habitica.deleteTasks(tasks.map(task => task._id)))
-        .then(() => todoist.sync(lastRun.syncToken))
-        .then(sync => {
+        .then(tasks => tasks.map(task => habitica.deleteTask(task._id)))
+        .then(() => getProjects(config))
+        .then(config => getSyncData(config, lastRun.syncToken))
+        .then(config => {
+            const sync = config.sync;
             lastRun.syncToken = sync.sync_token;
             jsonFile.writeFileSync('lastRun.json', lastRun);
-            console.log(JSON.stringify(sync.items));
-
             const scorePromises = Promise.all(sync.items
                 .filter(item => item.checked)
                 .map(item => habitica.scoreTask(item.id)));
 
-            return sync.items.filter(item => !item.checked);
+            config.items = sync.items.filter(item => !item.checked);
+            return config;
         })
-        .then((items) => {
-            items
-                // remove "recurring" tasks for the sake of "todos"
-                .filter(item => !_.includes(item.date_string, 'every'))
-                .map(item => {
-                    return {
-                        content: item.content, 
-                        alias: item.id,
-                        priority: priorityMap[item.priority]
-                    };
-                })
+        .then((config) => {
+            const isProjectAllowed = filterIgnoredProjects(config);
+            config.items
+                .filter(isProjectAllowed)
+                .filter(isTaskRecurring)
+                .map(createHabiticaTask)
                 .map(task => habitica.createTask(task));
-        });
-
-    // return todoist.sync()
-    //     .then(s => {
-    //         console.log(s);
-    //     })
-    //     .then(() => {
-    //         return todoist.getTask('2217245619')
-    //             .then(t => console.log(t));
-    //     });
+        });        
 }

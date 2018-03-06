@@ -18,10 +18,15 @@ module.exports = class {
             .then(r => JSON.parse(r)); 
     }
 
+    listProjects() {
+        return this.request.get('https://beta.todoist.com/API/v8/projects')
+            .then(r => JSON.parse(r));
+    }
+
 
     listTasks() {
         return this.request.get('https://beta.todoist.com/API/v8/tasks')
-            .then(r => JSON.parse(r)); 
+            .then(r => JSON.parse(r));
     }
 
     sync(token) {

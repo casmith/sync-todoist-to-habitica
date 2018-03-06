@@ -7,7 +7,6 @@ module.exports = class {
     constructor (apiUser, apiKey) {
         this.apiUser = apiUser;
         this.apiKey = apiKey;
-
         const headers = {
             ['x-api-user']: this.apiUser,
             ['x-api-key']: this.apiKey
@@ -16,7 +15,6 @@ module.exports = class {
     }
 
     createTask (task) {
-        console.log('createing task', task)
         return this.request.post({
             url: 'https://habitica.com/api/v3/tasks/user',
             form: {

@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: docker pull circleci/node
+      - image: docker pull circleci/node:7.10
     steps:
       - checkout
       - run: npm install

@@ -60,8 +60,6 @@ module.exports = function (todoist, habitica) {
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
             const sync = config.sync;
-            lastRun.syncToken = sync.sync_token;
-            jsonFile.writeFileSync('lastRun.json', lastRun);
             const scorePromises = Promise.all(sync.items
                 .filter(item => item.checked)
                 .map(item => habitica.scoreTask(item.id)));
@@ -69,12 +67,18 @@ module.exports = function (todoist, habitica) {
             config.items = sync.items.filter(item => !item.checked);
             return config;
         })
-        .then((config) => {
+        .then(config => {
             const isProjectAllowed = filterIgnoredProjects(config);
             config.items
                 .filter(isProjectAllowed)
                 .filter(isTaskRecurring)
                 .map(createHabiticaTask)
                 .map(task => habitica.createTask(task));
-        });        
+            return config;
+        })
+        .then(config => {
+            const sync = config.sync;
+            lastRun.syncToken = sync.sync_token;
+            jsonFile.writeFileSync('lastRun.json', lastRun);
+        });
 }

@@ -16,12 +16,20 @@ module.exports = function (todoist, habitica) {
 
     const config = require('./config.json');
 
+    const createTask = function (todoistTask) {
+        return habitica.createTask(createHabiticaTask(todoistTask));
+    }
+
     const createHabiticaTask = function (todoistTask) {
         return {
             content: todoistTask.content, 
             alias: todoistTask.id,
             priority: priorityMap[todoistTask.priority]
         }
+    }
+
+    const deleteTask = function (taskId) {
+        return habitica.deleteTask(taskId);
     }
 
     const getSyncData = function (config, syncToken) {
@@ -55,11 +63,12 @@ module.exports = function (todoist, habitica) {
     }
 
     return habitica.listTasks()
-        .then(tasks => tasks.map(task => habitica.deleteTask(task._id)))
+        //.then(tasks => tasks.map(task => habitica.deleteTask(task._id)))
         .then(() => getProjects(config))
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
             const sync = config.sync;
+            console.log(sync)
             const scorePromises = Promise.all(sync.items
                 .filter(item => item.checked)
                 .map(item => habitica.scoreTask(item.id)));
@@ -72,13 +81,19 @@ module.exports = function (todoist, habitica) {
             config.items
                 .filter(isProjectAllowed)
                 .filter(isTaskRecurring)
-                .map(createHabiticaTask)
-                .map(task => habitica.createTask(task));
+                .map(item => {
+                    if (item.is_deleted) {
+                        return deleteTask(item.id);
+                    } else {
+                        return createTask(item);
+                    }
+                });
             return config;
         })
         .then(config => {
             const sync = config.sync;
             lastRun.syncToken = sync.sync_token;
             jsonFile.writeFileSync('lastRun.json', lastRun);
-        });
+        })
+        .catch(e => console.error(e));
 }

@@ -20,11 +20,16 @@ module.exports = function (todoist, habitica) {
         return habitica.createTask(createHabiticaTask(todoistTask));
     }
 
-    const createHabiticaTask = function (todoistTask) {
+    const updateTask = function (todoistTask, id) {
+        return habitica.updateTask(createHabiticaTask(todoistTask, id));
+    }
+
+    const createHabiticaTask = function (todoistTask, id) {
         return {
             content: todoistTask.content, 
             alias: todoistTask.id,
-            priority: priorityMap[todoistTask.priority]
+            priority: priorityMap[todoistTask.priority],
+            task_id: id
         }
     }
 
@@ -39,6 +44,18 @@ module.exports = function (todoist, habitica) {
                 return config;
             });
     };
+
+    const getHabiticaTasks = function (config) {
+        return habitica.listTasks()
+            .then(tasks => {
+                config.habiticaTasks = tasks;
+                config.aliases = _.reduce(tasks, (acc, task) => {
+                    acc[task.alias] = task._id;
+                    return acc;
+                }, {});
+                return config;
+            })
+    }
 
     const getProjects = function (config) {
         return todoist.listProjects()
@@ -62,13 +79,12 @@ module.exports = function (todoist, habitica) {
         }
     }
 
-    return habitica.listTasks()
+    return getHabiticaTasks(config)
         //.then(tasks => tasks.map(task => habitica.deleteTask(task._id)))
         .then(() => getProjects(config))
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
             const sync = config.sync;
-            console.log(sync)
             const scorePromises = Promise.all(sync.items
                 .filter(item => item.checked)
                 .map(item => habitica.scoreTask(item.id)));
@@ -78,22 +94,25 @@ module.exports = function (todoist, habitica) {
         })
         .then(config => {
             const isProjectAllowed = filterIgnoredProjects(config);
-            config.items
-                .filter(isProjectAllowed)
-                .filter(isTaskRecurring)
-                .map(item => {
-                    if (item.is_deleted) {
-                        return deleteTask(item.id);
-                    } else {
-                        return createTask(item);
-                    }
-                });
-            return config;
+            return Promise.all(config.items
+                    .filter(isProjectAllowed)
+                    .filter(isTaskRecurring)
+                    .map(item => {
+                        const aliases = config.habiticaTasks.map(t => t.alias);
+                        if (item.is_deleted) {
+                            return deleteTask(item.id);
+                        } else if (_.includes(aliases, item.id + '')) {
+                            return updateTask(item, config.aliases[item.id]); 
+                        } else {
+                            return createTask(item);
+                        }
+                    }))
+                .then(() => config);
         })
         .then(config => {
             const sync = config.sync;
             lastRun.syncToken = sync.sync_token;
             jsonFile.writeFileSync('lastRun.json', lastRun);
         })
-        .catch(e => console.error(e));
+        //.catch(e => console.error(e));
 }

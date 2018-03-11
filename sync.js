@@ -3,6 +3,7 @@
 module.exports = function (todoist, habitica) {
 
     const _ = require('lodash'),
+        moment = require('moment'),
         jsonFile = require('jsonfile');
 
     const priorityMap = {
@@ -20,16 +21,17 @@ module.exports = function (todoist, habitica) {
         return habitica.createTask(createHabiticaTask(todoistTask));
     }
 
-    const updateTask = function (todoistTask, id) {
-        return habitica.updateTask(createHabiticaTask(todoistTask, id));
+    const updateTask = function (todoistTask) {
+        return habitica.updateTask(createHabiticaTask(todoistTask));
     }
 
-    const createHabiticaTask = function (todoistTask, id) {
+    const createHabiticaTask = function (todoistTask) {
         return {
-            content: todoistTask.content, 
+            type: 'todo',
+            text: todoistTask.content, 
             alias: todoistTask.id,
             priority: priorityMap[todoistTask.priority],
-            task_id: id
+            date: moment(todoistTask.due_date_utc).format()
         }
     }
 
@@ -54,7 +56,7 @@ module.exports = function (todoist, habitica) {
                     return acc;
                 }, {});
                 return config;
-            })
+            });
     }
 
     const getProjects = function (config) {
@@ -85,12 +87,13 @@ module.exports = function (todoist, habitica) {
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
             const sync = config.sync;
-            const scorePromises = Promise.all(sync.items
+            return Promise.all(sync.items
                 .filter(item => item.checked)
-                .map(item => habitica.scoreTask(item.id)));
-
-            config.items = sync.items.filter(item => !item.checked);
-            return config;
+                .map(item => habitica.scoreTask(item.id)))
+            .then(() => {
+                config.items = sync.items.filter(item => !item.checked);
+                return config;
+            }); 
         })
         .then(config => {
             const isProjectAllowed = filterIgnoredProjects(config);

@@ -17,31 +17,20 @@ module.exports = class {
     createTask (task) {
         return this.request.post({
             url: `https://habitica.com/api/v3/tasks/user`,
-            form: {
-                type: 'todo',
-                text: task.content,
-                alias: task.alias,
-                priority: task.priority
-            }
+            form: task
         });
     }
 
     getTask(taskId) {
         return this.request.get({
             url: `https://habitica.com/api/v3/tasks/${taskId}`
-        }).catch((e) => {
-            console.log('oh')
-            return Promise.reject(e);
         });
     }
 
     updateTask (task) {
         return this.request.put({
             url: `https://habitica.com/api/v3/tasks/${task.alias}`,
-            form: {
-                text: task.content,
-                priority: task.priority
-            }
+            form: task
         });
     }
 

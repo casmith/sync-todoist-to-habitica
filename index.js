@@ -1,22 +1,40 @@
 'use strict';
 
-const priorityMap = {
-	1: 0.1,
- 	2: 1,
- 	3: 1.5,
- 	4: 2
-};
-
 const _ = require('lodash');
+const moment = require('moment');
+const winston = require('winston');
 const config = require('./config.json');
 
+const logger = (function () {
+    const config = winston.config;
+    const logger = new (winston.Logger)({
+      transports: [
+        new (winston.transports.Console)({
+          timestamp: function() {
+            return moment().format('YYYY-MM-DD hh:mm:ss:SSS');
+          },
+          formatter: function(options) {
+            // - Return string will be passed to logger.
+            // - Optionally, use options.colorize(options.level, <string>) to
+            //   colorize output based on the log level.
+            return options.timestamp() + ' ' +
+              config.colorize(options.level, options.level.toUpperCase()) + ' ' +
+              (options.message ? options.message : '') +
+              (options.meta && Object.keys(options.meta).length ? '\n\t'+ JSON.stringify(options.meta) : '' );
+          }
+        })
+      ]
+    });
+    return logger;    
+}());
+
 const Todoist = require('./todoist');
-const todoist = new Todoist(config.todoist.token);
+const todoist = new Todoist(config.todoist.token, logger);
 
 const Habitica = require('./habitica');
 const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey);
 
-require('./sync')(todoist, habitica)
+require('./sync')(todoist, habitica, logger)
 	.then(() => console.log('done'));
 
 

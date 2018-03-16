@@ -4,13 +4,14 @@ const request = require('request-promise');
 
 module.exports = class {
 
-    constructor(apiToken) {
+    constructor(apiToken, logger) {
         this.apiToken = apiToken;
         this.request = request.defaults({
             headers: {
                 'Authorization': 'Bearer ' + this.apiToken
             }
-        })
+        });
+        this.logger = logger;
     }
 
     getStats() {
@@ -36,7 +37,7 @@ module.exports = class {
 
     sync(token) {
         const url = 'https://todoist.com/api/v7/sync?resource_types=["all"]&sync_token=' + token;
-        console.log('url', url);
+        this.logger.info('Sync Token:', token);
         return this.request.get({
                 url: url
             })

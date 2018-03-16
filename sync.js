@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = function (todoist, habitica) {
+module.exports = function (todoist, habitica, logger) {
 
     const _ = require('lodash'),
         moment = require('moment'),
@@ -89,11 +89,11 @@ module.exports = function (todoist, habitica) {
     const scoreDailyGoalTask = function(config) {
         const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
         if (dailyGoalTask) {
-            console.log('Daily goal reached! Scoring "Todoist: Daily Goal"');
+            logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"');
             lastRun.lastDailyGoal = today;
             return habitica.scoreTask(dailyGoalTask._id);
         } else {
-            console.log('"Todoist: Daily Goal" task not configured')
+            logger.info('"Todoist: Daily Goal" task not configured')
         }
     }
 
@@ -133,7 +133,7 @@ module.exports = function (todoist, habitica) {
                     const goal = stats.goals.daily_goal;
                     const today = moment(stats['days_items'][0].date);
                     const completed = stats['days_items'][0].total_completed;
-                    console.log('Daily goal:', goal, ' Completed:', completed);
+                    logger.info('Daily goal:', goal, ' Completed:', completed);
                     if (completed >= goal && today.isAfter(lastRun.lastDailyGoal, 'd')) {
                         return scoreDailyGoalTask(config);
                     }

@@ -13,6 +13,11 @@ module.exports = class {
         })
     }
 
+    getStats() {
+        return this.request.get('https://todoist.com/api/v7/completed/get_stats')
+            .then(r => JSON.parse(r));
+    }
+
     getTask(taskId) {
         return this.request.get(`https://beta.todoist.com/API/v8/tasks/${taskId}`)
             .then(r => JSON.parse(r)); 

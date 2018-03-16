@@ -55,8 +55,13 @@ module.exports = function (todoist, habitica) {
                     acc[task.alias] = task._id;
                     return acc;
                 }, {});
-                return config;
-            });
+            })
+            .then(() => {
+                return habitica.listDailies().then(dailies => {
+                    config.habiticaDailies = dailies;
+                });
+            })
+            .then(() => config)
     }
 
     const getProjects = function (config) {
@@ -81,8 +86,18 @@ module.exports = function (todoist, habitica) {
         }
     }
 
+    const scoreDailyGoalTask = function(config) {
+        const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
+        if (dailyGoalTask) {
+            console.log('Daily goal reached! Scoring "Todoist: Daily Goal"');
+            lastRun.lastDailyGoal = today;
+            return habitica.scoreTask(dailyGoalTask._id);
+        } else {
+            console.log('"Todoist: Daily Goal" task not configured')
+        }
+    }
+
     return getHabiticaTasks(config)
-        //.then(tasks => tasks.map(task => habitica.deleteTask(task._id)))
         .then(() => getProjects(config))
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
@@ -113,9 +128,20 @@ module.exports = function (todoist, habitica) {
                 .then(() => config);
         })
         .then(config => {
+            return todoist.getStats()
+                .then(stats => {
+                    const goal = stats.goals.daily_goal;
+                    const today = moment(stats['days_items'][0].date);
+                    const completed = stats['days_items'][0].total_completed;
+                    console.log('Daily goal:', goal, ' Completed:', completed);
+                    if (completed >= goal && today.isAfter(lastRun.lastDailyGoal, 'd')) {
+                        return scoreDailyGoalTask(config);
+                    }
+                }).then(() => config);
+        })
+        .then(config => {
             const sync = config.sync;
             lastRun.syncToken = sync.sync_token;
             jsonFile.writeFileSync('lastRun.json', lastRun);
-        })
-        //.catch(e => console.error(e));
+        });
 }

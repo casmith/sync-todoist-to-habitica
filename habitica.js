@@ -44,11 +44,18 @@ module.exports = class {
         return Promise.all(taskIds.map(taskId => this.deleteTask(taskId)));
     }
 
-    listTasks() {
+    listTasks(type) {
+        if (!type) {
+            type = 'todos';
+        }
         return this.request.get({
-            url: 'https://habitica.com/api/v3/tasks/user?type=todos'
+            url: 'https://habitica.com/api/v3/tasks/user' + (type ? `?type=${type}` : '')
         })
         .then(response => JSON.parse(response).data);
+    }
+
+    listDailies() {
+        return this.listTasks('dailys');
     }
 
     userCast () {

@@ -26,12 +26,14 @@ module.exports = function (todoist, habitica, logger) {
     }
 
     const createHabiticaTask = function (todoistTask) {
+        const todoistDate = todoistTask.due_date_utc;
+        const dueDate = todoistDate && moment(todoistDate).format();
         return {
             type: 'todo',
             text: todoistTask.content, 
             alias: todoistTask.id,
             priority: priorityMap[todoistTask.priority],
-            date: moment(todoistTask.due_date_utc).format()
+            date: dueDate
         }
     }
 
@@ -48,6 +50,7 @@ module.exports = function (todoist, habitica, logger) {
     };
 
     const getHabiticaTasks = function (config) {
+        logger.info('Getting habitica tasks');
         return habitica.listTasks()
             .then(tasks => {
                 config.habiticaTasks = tasks;

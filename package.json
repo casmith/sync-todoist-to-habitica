@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-    "test:watch": "mocha --watch --growl"
+    "test": "mocha --timeout 10000",
+    "test:watch": "mocha --timeout 10000 --watch --growl"
   },
   "author": "",
   "license": "ISC",

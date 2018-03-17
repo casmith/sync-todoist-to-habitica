@@ -4,6 +4,7 @@ const _ = require('lodash');
 const moment = require('moment');
 const winston = require('winston');
 const config = require('./config.json');
+const jsonFile = require('jsonfile')
 
 const logger = (function () {
     const config = winston.config;
@@ -35,9 +36,15 @@ const Habitica = require('./habitica');
 const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey);
 const Sync = require('./sync');
 
+const lastRun = jsonFile.readFileSync('lastRun.json', {throws: false}) || {};
 new Sync(todoist, habitica, logger)
-	.sync()
-	.then(() => console.log('done'));
+	.sync(lastRun)
+	.then(config => {
+        const sync = config.sync;
+        lastRun.syncToken = sync.sync_token;
+        jsonFile.writeFileSync('lastRun.json', lastRun);
+    })
+    .then(() => console.log('done'));
 
 
 // Promise.all([habitica.listTasks(), todoist.listTasks()])

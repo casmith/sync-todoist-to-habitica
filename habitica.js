@@ -40,6 +40,11 @@ module.exports = class {
         });
     }
 
+    deleteAllTasks() {
+        return this.listTasks()
+            .then(tasks => Promise.all(tasks.map(t => this.deleteTask(t._id))));
+    }
+
     deleteTasks (taskIds) {
         return Promise.all(taskIds.map(taskId => this.deleteTask(taskId)));
     }

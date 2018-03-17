@@ -36,6 +36,7 @@ const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey);
 const Sync = require('./sync');
 
 new Sync(todoist, habitica, logger)
+	.sync()
 	.then(() => console.log('done'));
 
 

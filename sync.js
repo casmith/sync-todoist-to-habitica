@@ -100,7 +100,9 @@ module.exports = function (todoist, habitica, logger) {
         }
     }
 
-    return getHabiticaTasks(config)
+
+    this.sync = function () {
+        return getHabiticaTasks(config)
         .then(() => getProjects(config))
         .then(config => getSyncData(config, lastRun.syncToken))
         .then(config => {
@@ -147,4 +149,5 @@ module.exports = function (todoist, habitica, logger) {
             lastRun.syncToken = sync.sync_token;
             jsonFile.writeFileSync('lastRun.json', lastRun);
         });
+    };
 }

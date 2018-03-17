@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('request-promise');
+const uuidv4 = require('uuid/v4');
 
 module.exports = class {
 
@@ -12,6 +13,26 @@ module.exports = class {
             }
         });
         this.logger = logger;
+    }
+
+    createTask(item) {
+        return this.request.post({
+            url: 'https://beta.todoist.com/API/v8/tasks', 
+            body: JSON.stringify(item),
+            'content-type': 'application/json',
+            headers: {
+                'X-Request-Id': uuidv4(),
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
+    deleteTask(id) {
+        return this.request.delete(`https://beta.todoist.com/API/v8/tasks/${id}`);
+    }
+
+    deleteAllTasks() {
+        return this.listTasks().then(items => Promise.all(items.map(i => this.deleteTask(i.id))));
     }
 
     getStats() {

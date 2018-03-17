@@ -33,8 +33,9 @@ const todoist = new Todoist(config.todoist.token, logger);
 
 const Habitica = require('./habitica');
 const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey);
+const Sync = require('./sync');
 
-require('./sync')(todoist, habitica, logger)
+new Sync(todoist, habitica, logger)
 	.then(() => console.log('done'));
 
 

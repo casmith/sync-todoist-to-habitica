@@ -120,7 +120,7 @@ module.exports = function (todoist, habitica, logger) {
                     .map(item => {
                         logger.info('Scoring task', item.id, item.content);
                         return habitica.scoreTask(item.id);
-                    })
+                    }))
                 .then(() => {
                     config.items = sync.items.filter(item => !item.checked);
                     return config;

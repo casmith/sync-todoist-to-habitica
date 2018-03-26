@@ -13,6 +13,7 @@ const todoist = new Todoist(config.todoist.token, logger);
 const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey);
 const lastRun = jsonFile.readFileSync('lastRun.json', {throws: false}) || {};
 
+logger.info("Sync started");
 new Sync(todoist, habitica, logger)
 	.sync(lastRun)
 	.then(config => {

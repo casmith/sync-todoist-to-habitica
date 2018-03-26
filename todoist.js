@@ -19,9 +19,7 @@ module.exports = class {
         return this.request.post({
             url: 'https://beta.todoist.com/API/v8/tasks', 
             body: JSON.stringify(item),
-            'content-type': 'application/json',
             headers: {
-                'X-Request-Id': uuidv4(),
                 'Content-Type': 'application/json'
             }
         });

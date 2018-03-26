@@ -20,4 +20,4 @@ new Sync(todoist, habitica, logger)
         lastRun.syncToken = sync.sync_token;
         jsonFile.writeFileSync('lastRun.json', lastRun);
     })
-    .then(() => console.log('done'));
+    .then(() => logger.info('done'));

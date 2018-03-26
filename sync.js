@@ -16,10 +16,12 @@ module.exports = function (todoist, habitica, logger) {
     const config = require('./config.json');
 
     this.createTask = function (todoistTask) {
+        logger.info('Creating new habitica task', todoistTask.content);
         return habitica.createTask(this.createHabiticaTask(todoistTask));
     }
 
     this.updateTask = function (todoistTask) {
+        logger.info('Updating habatica task', todoistTask.id, todoistTask.content);
         return habitica.updateTask(this.createHabiticaTask(todoistTask));
     }
 
@@ -35,8 +37,16 @@ module.exports = function (todoist, habitica, logger) {
         }
     }
 
-    this.deleteTask = function (taskId) {
-        return habitica.deleteTask(taskId);
+    this.deleteTask = function (task) {
+        logger.info('Deleting habitica task', task.content, task.id);
+        return habitica.deleteTask(task.id)
+            .catch(err => {
+                if (err.statusCode === 404) {
+                    logger.warn('Deleting task that no longer exists', task.id);
+                } else {
+                    return Promise.reject(err);
+                }
+            });
     }
 
     this.getSyncData = function (config, syncToken) {
@@ -121,7 +131,7 @@ module.exports = function (todoist, habitica, logger) {
                         .map(item => {
                             const aliases = config.habiticaTasks.map(t => t.alias);
                             if (item.is_deleted) {
-                                return this.deleteTask(item.id);
+                                return this.deleteTask(item);
                             } else if (_.includes(aliases, item.id + '')) {
                                 return this.updateTask(item, config.aliases[item.id]);
                             } else {

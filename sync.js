@@ -117,7 +117,10 @@ module.exports = function (todoist, habitica, logger) {
                 const sync = config.sync;
                 return Promise.all(sync.items
                     .filter(item => item.checked)
-                    .map(item => habitica.scoreTask(item.id)))
+                    .map(item => {
+                        logger.info('Scoring task', item.id, item.content);
+                        return habitica.scoreTask(item.id);
+                    })
                 .then(() => {
                     config.items = sync.items.filter(item => !item.checked);
                     return config;

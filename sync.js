@@ -24,21 +24,7 @@ module.exports = class Sync {
             return this.getHabiticaTasks(config)
                 .then(() => this.getProjects(config))
                 .then(config => this.getSyncData(config, lastRun.syncToken))
-                .then(config => {
-                    const sync = config.sync;
-                    return Promise.all(sync.items
-                        .filter(item => item.checked)
-                        .map(item => {
-                            logger.info('Scoring task', item.id, item.content);
-                            return habitica.scoreTask(item.id).then(r => {
-                                console.log(JSON.stringify(r));
-                            });
-                        }))
-                    .then(() => {
-                        config.items = sync.items.filter(item => !item.checked);
-                        return config;
-                    });
-                })
+                .then(config => this.scoreCompletedTasks(config))
                 .then(config => {
                     const isProjectAllowed = this.filterIgnoredProjects(config);
                     return Promise.all(config.items
@@ -146,6 +132,20 @@ module.exports = class Sync {
 
     isTaskRecurring(item) {
         return !_.includes(item.date_string, 'every');
+    }
+
+    scoreCompletedTasks(config) {
+        const sync = config.sync;
+        return Promise.all(sync.items
+                .filter(item => item.checked)
+                .map(item => {
+                    this.logger.info('Scoring task', item.id, item.content);
+                    return this.habitica.scoreTask(item.id);
+                }))
+            .then(() => {
+                config.items = sync.items.filter(item => !item.checked);
+                return config;
+            });
     }
 
     scoreDailyGoalTask(config) {

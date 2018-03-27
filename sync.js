@@ -42,19 +42,22 @@ module.exports = class Sync {
                             }))
                         .then(() => config);
                 })
-                .then(config => {
-                    return todoist.getStats()
-                        .then(stats => {
-                            const goal = stats.goals.daily_goal;
-                            const today = moment(stats['days_items'][0].date);
-                            const completed = stats['days_items'][0].total_completed;
-                            logger.info('Daily goal:', goal, ' Completed:', completed);
-                            if (completed >= goal && today.isAfter(lastRun.lastDailyGoal, 'd')) {
-                                return this.scoreDailyGoalTask(config);
-                            }
-                        }).then(() => config);
-                });
+                .then(config => this.checkDailyGoal(config));
         };
+    }
+
+    checkDailyGoal(config) {
+        return this.todoist.getStats()
+            .then(stats => {
+                const goal = stats.goals.daily_goal;
+                const today = moment(stats['days_items'][0].date);
+                const completed = stats['days_items'][0].total_completed;
+                this.logger.info('Daily goal:', goal, ' Completed:', completed);
+                if (completed >= goal && today.isAfter(lastRun.lastDailyGoal, 'd')) {
+                    return this.scoreDailyGoalTask(config);
+                }
+            })
+            .then(() => config);
     }
 
     createHabiticaTask(todoistTask) {

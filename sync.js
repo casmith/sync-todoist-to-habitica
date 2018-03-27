@@ -25,23 +25,7 @@ module.exports = class Sync {
                 .then(() => this.getProjects(config))
                 .then(config => this.getSyncData(config, lastRun.syncToken))
                 .then(config => this.scoreCompletedTasks(config))
-                .then(config => {
-                    const isProjectAllowed = this.filterIgnoredProjects(config);
-                    return Promise.all(config.items
-                            .filter(isProjectAllowed)
-                            .filter(this.isTaskRecurring)
-                            .map(item => {
-                                const aliases = config.habiticaTasks.map(t => t.alias);
-                                if (item.is_deleted) {
-                                    return this.deleteTask(item);
-                                } else if (_.includes(aliases, item.id + '')) {
-                                    return this.updateTask(item, config.aliases[item.id]);
-                                } else {
-                                    return this.createTask(item);
-                                }
-                            }))
-                        .then(() => config);
-                })
+                .then(config => this.updateTasks(config))
                 .then(config => this.checkDailyGoal(config));
         };
     }
@@ -165,5 +149,23 @@ module.exports = class Sync {
     updateTask(todoistTask) {
         this.logger.info('Updating habatica task', todoistTask.id, todoistTask.content);
         return this.habitica.updateTask(this.createHabiticaTask(todoistTask));
+    }
+
+    updateTasks(config) {
+        const isProjectAllowed = this.filterIgnoredProjects(config);
+        return Promise.all(config.items
+                .filter(isProjectAllowed)
+                .filter(this.isTaskRecurring)
+                .map(item => {
+                    const aliases = config.habiticaTasks.map(t => t.alias);
+                    if (item.is_deleted) {
+                        return this.deleteTask(item);
+                    } else if (_.includes(aliases, item.id + '')) {
+                        return this.updateTask(item, config.aliases[item.id]);
+                    } else {
+                        return this.createTask(item);
+                    }
+                }))
+            .then(() => config);
     }
 }

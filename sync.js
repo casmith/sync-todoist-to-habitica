@@ -6,28 +6,15 @@ const _ = require('lodash'),
 
 module.exports = class Sync {
     constructor (todoist, habitica, logger) {
-
         this.priorityMap = {
             1: 0.1,
             2: 1,
             3: 1.5,
             4: 2
         };
-
-        const config = require('./config.json');
         this.habitica = habitica;
         this.logger = logger;
         this.todoist = todoist;        
-
-        this.sync = function (lastRun) {
-            lastRun = lastRun || {};
-            return this.getHabiticaTasks(config)
-                .then(() => this.getProjects(config))
-                .then(config => this.getSyncData(config, lastRun.syncToken))
-                .then(config => this.scoreCompletedTasks(config))
-                .then(config => this.updateTasks(config))
-                .then(config => this.checkDailyGoal(config));
-        };
     }
 
     checkDailyGoal(config) {
@@ -144,6 +131,17 @@ module.exports = class Sync {
         } else {
             this.logger.info('"Todoist: Daily Goal" task not configured');
         }
+    }
+
+    sync(lastRun) {
+        const config = require('./config.json');
+        lastRun = lastRun || {};
+        return this.getHabiticaTasks(config)
+            .then(() => this.getProjects(config))
+            .then(config => this.getSyncData(config, lastRun.syncToken))
+            .then(config => this.scoreCompletedTasks(config))
+            .then(config => this.updateTasks(config))
+            .then(config => this.checkDailyGoal(config));
     }
 
     updateTask(todoistTask) {

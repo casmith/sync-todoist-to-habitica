@@ -40,8 +40,8 @@ module.exports = class {
         });
     }
 
-    deleteAllTasks() {
-        return this.listTasks()
+    deleteAllTasks(type) {
+        return this.listTasks(type)
             .then(tasks => Promise.all(tasks.map(t => this.deleteTask(t._id))));
     }
 

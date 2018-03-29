@@ -105,7 +105,7 @@ module.exports = class Sync {
     }
 
     isTaskRecurring(item) {
-        return _.includes(item.date_string, 'every');
+        return _.includes(_.toLower(item.date_string), 'every');
     }
 
     scoreCompletedTasks(config) {

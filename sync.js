@@ -105,7 +105,7 @@ module.exports = class Sync {
     }
 
     isTaskRecurring(item) {
-        return !_.includes(item.date_string, 'every');
+        return _.includes(item.date_string, 'every');
     }
 
     scoreCompletedTasks(config) {
@@ -151,9 +151,10 @@ module.exports = class Sync {
 
     updateTasks(config) {
         const isProjectAllowed = this.filterIgnoredProjects(config);
-        return Promise.all(config.items
+        return Promise.all(
+            config.items
                 .filter(isProjectAllowed)
-                .filter(this.isTaskRecurring)
+                .filter(t => !this.isTaskRecurring(t))
                 .map(item => {
                     const aliases = config.habiticaTasks.map(t => t.alias);
                     if (item.is_deleted) {
@@ -163,7 +164,8 @@ module.exports = class Sync {
                     } else {
                         return this.createTask(item);
                     }
-                }))
+                })
+        )
             .then(() => config);
     }
 }

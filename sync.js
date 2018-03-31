@@ -188,6 +188,16 @@ module.exports = class Sync {
             }
         }
 
+
+        if (dateExpr.startsWith('every other')) {
+            const dayExpr = dateExpr.substr(12).trim();
+            return {
+                everyX: 2,
+                frequency: 'weekly',
+                repeat: this.getRepeat(this.getDay(dayExpr))
+            }
+        }
+
         if (dateExpr === 'every month' || dateExpr === 'monthly') {
             return {
                 frequency: 'monthly'
@@ -203,6 +213,39 @@ module.exports = class Sync {
         return {
             frequency: 'daily'
         }
+    }
+
+    getDay(dayExpr) {
+        switch(_.toLower(dayExpr)) {
+            case 'monday':
+            case 'mon':
+            case 'm':
+                return 'm';
+            case 'tuesday':
+            case 'tues':
+            case 'tue':
+            case 't':
+                return 't';
+            case 'wednesday':
+            case 'wed':
+            case 'w':
+                return 'w';
+
+        }
+    }
+
+    getRepeat(day) {
+        const repeat = {
+            su: false,
+            m: false,
+            t: false,
+            w: false,
+            th: false,
+            f: false,
+            s: false
+        }
+        repeat[day] = true;
+        return repeat;
     }
 
     updateTasks(config) {

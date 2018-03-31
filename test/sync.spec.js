@@ -48,13 +48,14 @@ describe('sync', function () {
         });
 
         it('creates a daily in habitica', function () {
-            return this.habitica.createTask({
-                type: 'daily',
-                text: 'testing daily',
-                frequency: 'monthly'
-            }).then(() => {
-                this.habitica.listTasks('dailys').then(tasks => console.log(tasks));
-            });
+            // return this.habitica.createTask({
+            //     type: 'daily',
+            //     text: 'testing daily',
+            //     frequency: 'monthly',
+            // }).then(() => {
+                this.todoist.listTasks().then(tasks => console.log(tasks));
+                // this.habitica.listTasks('dailys').then(tasks => console.log(tasks));
+            // });
         });
     });
 
@@ -125,6 +126,20 @@ describe('sync', function () {
         it('is given "every 3rd friday"');
         it('is given "every 27th"');
         it('is given "every jan 27th"');
-        it('is given "every other monday"');
+        it('is given "every other monday"', function () {
+            expect(this.sync.calculateFrequency('every other monday')).to.deep.equal({
+                frequency: 'weekly',
+                everyX: 2,
+                repeat: {
+                    su: false,
+                    m: true,
+                    t: false,
+                    w: false,
+                    th: false,
+                    f: false,
+                    s: false
+                }
+            });
+        });
     });
 });

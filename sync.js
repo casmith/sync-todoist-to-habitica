@@ -230,7 +230,14 @@ module.exports = class Sync {
             case 'wed':
             case 'w':
                 return 'w';
-
+            case 'thursday':
+            case 'thurs':
+            case 'th':
+                return 'th';
+            case 'friday':
+            case 'fri':
+            case 'f':
+                return 'f';
         }
     }
 

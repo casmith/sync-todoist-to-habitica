@@ -4,6 +4,16 @@ const _ = require('lodash'),
     moment = require('moment'),
     jsonFile = require('jsonfile');
 
+const REPEAT_WEEKDAYS = {
+    su: false,
+    m: true,
+    t: true,
+    w: true,
+    th: true,
+    f: true,
+    s: false
+};
+
 module.exports = class Sync {
     constructor (todoist, habitica, logger) {
         this.priorityMap = {
@@ -140,6 +150,7 @@ module.exports = class Sync {
             .then(() => this.getProjects(config))
             .then(config => this.getSyncData(config, lastRun.syncToken))
             .then(config => this.scoreCompletedTasks(config))
+            .then(config => this.updateDailies(config))
             .then(config => this.updateTasks(config))
             .then(config => this.checkDailyGoal(config));
     }
@@ -147,6 +158,51 @@ module.exports = class Sync {
     updateTask(todoistTask) {
         this.logger.info('Updating habatica task', todoistTask.id, todoistTask.content);
         return this.habitica.updateTask(this.createHabiticaTask(todoistTask));
+    }
+
+    updateDailies(config) {
+        const isProjectAllowed = this.filterIgnoredProjects(config);
+        return Promise.all(
+            config.items
+                .filter(isProjectAllowed)
+                .filter(this.isTaskRecurring)
+                .map(item => {
+                    console.log(item);
+                })
+
+        )
+            .then(() => config);
+    }
+
+    calculateFrequency(dateExpr) {
+        if (dateExpr.includes('weekday')) {
+            return {
+                frequency: 'weekly',
+                repeat: REPEAT_WEEKDAYS
+            }
+        }
+
+        if (dateExpr === 'every week' || dateExpr === 'weekly') {
+            return {
+                frequency: 'weekly'
+            }
+        }
+
+        if (dateExpr === 'every month' || dateExpr === 'monthly') {
+            return {
+                frequency: 'monthly'
+            }
+        }
+
+        if (dateExpr === 'every year' || dateExpr === 'yearly') {
+            return {
+                frequency: 'yearly'
+            }
+        }
+
+        return {
+            frequency: 'daily'
+        }
     }
 
     updateTasks(config) {

@@ -5,5 +5,6 @@ jobs:
       - image: circleci/node:7.10
     steps:
       - checkout
+      - run: cp config.json.example config.json
       - run: npm install
       - run: npm test

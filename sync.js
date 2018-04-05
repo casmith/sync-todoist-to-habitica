@@ -30,6 +30,7 @@ module.exports = class Sync {
     checkDailyGoal(config) {
         return this.todoist.getStats()
             .then(stats => {
+                const lastRun = config.lastRun;
                 const goal = stats.goals.daily_goal;
                 const today = moment(stats['days_items'][0].date);
                 const completed = stats['days_items'][0].total_completed;
@@ -124,7 +125,7 @@ module.exports = class Sync {
                 .filter(item => item.checked)
                 .map(item => {
                     this.logger.info('Scoring task', item.id, item.content);
-                    return this.habitica.scoreTask(item.id);
+                    return this.habitica.scoreTask(item.id).catch(x => console.warn(x));
                 }))
             .then(() => {
                 config.items = sync.items.filter(item => !item.checked);
@@ -146,6 +147,7 @@ module.exports = class Sync {
     sync(lastRun) {
         const config = require('./config.json');
         lastRun = lastRun || {};
+	config.lastRun = lastRun;
         return this.getHabiticaTasks(config)
             .then(() => this.getProjects(config))
             .then(config => this.getSyncData(config, lastRun.syncToken))

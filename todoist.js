@@ -3,6 +3,8 @@
 const request = require('request-promise');
 const uuidv4 = require('uuid/v4');
 
+const baseUrl = 'https://api.todoist.com/rest/v1';
+
 module.exports = class {
 
     constructor(apiToken, logger) {
@@ -17,7 +19,7 @@ module.exports = class {
 
     createTask(item) {
         return this.request.post({
-            url: 'https://beta.todoist.com/API/v8/tasks', 
+            url: `${baseUrl}/tasks`, 
             body: JSON.stringify(item),
             headers: {
                 'Content-Type': 'application/json'
@@ -26,7 +28,7 @@ module.exports = class {
     }
 
     deleteTask(id) {
-        return this.request.delete(`https://beta.todoist.com/API/v8/tasks/${id}`);
+        return this.request.delete(`${baseUrl}/tasks/${id}`);
     }
 
     deleteAllTasks() {
@@ -34,28 +36,28 @@ module.exports = class {
     }
 
     getStats() {
-        return this.request.get('https://todoist.com/api/v7/completed/get_stats')
+        return this.request.get('https://api.todoist.com/sync/v8/completed/get_stats')
             .then(r => JSON.parse(r));
     }
 
     getTask(taskId) {
-        return this.request.get(`https://beta.todoist.com/API/v8/tasks/${taskId}`)
+        return this.request.get(`${baseUrl}/tasks/${taskId}`)
             .then(r => JSON.parse(r)); 
     }
 
     listProjects() {
-        return this.request.get('https://beta.todoist.com/API/v8/projects')
+        return this.request.get(`${baseUrl}/projects`)
             .then(r => JSON.parse(r));
     }
 
 
     listTasks() {
-        return this.request.get('https://beta.todoist.com/API/v8/tasks')
+        return this.request.get(`${baseUrl}/tasks`)
             .then(r => JSON.parse(r));
     }
 
     sync(token) {
-        const url = 'https://todoist.com/api/v7/sync?resource_types=["all"]&sync_token=' + token;
+        const url = 'https://api.todoist.com/sync/v8/sync?resource_types=["all"]&sync_token=' + token;
         this.logger.info('Sync Token:', token);
         return this.request.get({
                 url: url

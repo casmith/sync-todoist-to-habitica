@@ -6,5 +6,5 @@
     "todoist": {
         "token": "" 
     },
-    "ignoredProjects": []
+    "ignoreProjects": []
 }

@@ -148,7 +148,7 @@ module.exports = class Sync {
     sync(lastRun) {
         const config = require('./config.json');
         lastRun = lastRun || {};
-	config.lastRun = lastRun;
+        config.lastRun = lastRun;
         return this.getHabiticaTasks(config)
             .then(() => this.getProjects(config))
             .then(config => this.getSyncData(config, lastRun.syncToken))
@@ -170,7 +170,7 @@ module.exports = class Sync {
                 .filter(isProjectAllowed)
                 .filter(this.isTaskRecurring)
                 .map(item => {
-                    console.log(item);
+                    this.logger.info('Skipping daily item ' + item);
                 })
 
         )

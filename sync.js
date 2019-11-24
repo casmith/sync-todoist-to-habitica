@@ -112,7 +112,18 @@ module.exports = class Sync {
         return this.todoist.sync(syncToken)
             .then(sync => {
                 config.sync = sync;
+                config.sync.checklistItems = sync.items
+                    .filter(item => item.parent_id);
                 return config;
+            })
+            .then(config => {
+                this.logger.info("Fetching all todoist tasks");
+                return this.todoist.listTasks(syncToken)
+                    .then(tasks => {
+                        this.logger.info("Done fetching all todoist tasks");
+                        config.todoistTasks = tasks;
+                        return config;
+                    });
             });
     }
 
@@ -123,6 +134,7 @@ module.exports = class Sync {
     scoreCompletedTasks(config) {
         const sync = config.sync;
         return Promise.all(sync.items
+                .filter(item => !item.parent_id)
                 .filter(item => item.checked)
                 .map(item => {
                     this.logger.info('Scoring task', item.id, item.content);
@@ -147,6 +159,8 @@ module.exports = class Sync {
 
     sync(lastRun) {
         const config = require('./config.json');
+        this.config = config;
+
         lastRun = lastRun || {};
         config.lastRun = lastRun;
         return this.getHabiticaTasks(config)
@@ -155,12 +169,102 @@ module.exports = class Sync {
             .then(config => this.scoreCompletedTasks(config))
             .then(config => this.updateDailies(config))
             .then(config => this.updateTasks(config))
-            .then(config => this.checkDailyGoal(config));
+            .then(config => this.checkDailyGoal(config))
+            .then(config => this.syncChecklistItems(config));
+    }
+
+    syncChecklistItems(config) {
+        const checklistItems = config.sync.checklistItems || [];
+        const deletedItems = checklistItems.filter(i => i.is_deleted);
+        return Promise.all(checklistItems
+                .map(todoistItem => {
+                    const taskId = todoistItem.parent_id;
+                    const habiticaTask = config.habiticaTasks.find(i => i.alias = todoistItem.id);
+                    if (!habiticaTask) {
+                        this.logger.warn("Could not find a habitica task for todoist item", todoistItem.id);
+                        return;
+                    }
+                    const checklist = habiticaTask.checklist;
+                    const content = this.createChecklistItem(todoistItem)
+                    const habiticaChecklistItem = checklist.find(item => item.text.includes(`[${todoistItem.id}]`));
+                    if (habiticaChecklistItem) {
+                        const itemId = habiticaChecklistItem.id;
+                        if (todoistItem.is_deleted) {
+                            return this.habitica.deleteChecklistItem(taskId, itemId);
+                        } else {
+                            return this.habitica.updateChecklistItem(taskId, itemId, content)
+                                .then(() => todoistItem.checked && this.habitica.scoreChecklistItem(taskId, itemId));
+                        }
+                    } else {
+                        return todoistItem.is_deleted ||
+                            this.habitica.createChecklistItem(taskId, content);
+                    }
+                }))
+            .then(() => config);
+    }
+
+    /**
+     * Generates the checklist item text for habitica from a todoist task
+     *
+     * The text will be in the form "[id] content", e.g., "[2342342342] walk the dog"
+     */
+    createChecklistItem(todoistTask) {
+        return `[${todoistTask.id}] ${todoistTask.content}`;
+    }
+
+    updateTasks(config) {
+        const isProjectAllowed = this.filterIgnoredProjects(config);
+        return Promise.all(
+            config.items
+                .filter(isProjectAllowed)
+                .filter(t => !this.isTaskRecurring(t))
+                .map(item => {
+                    const aliases = config.habiticaTasks.map(t => t.alias);
+                    if (item.is_deleted) {
+                        let checklistItem = null;
+                        let habiticaTask = null;
+                        this.config.habiticaTasks.forEach(t => {
+                            const checklistPrefix = `[${item.id}]`;
+                            const found = t.checklist.find(li => li.text.includes(checklistPrefix));
+                            if (found) {
+                                checklistItem = found;
+                                habiticaTask = t;
+                                return false;
+                            }
+                        });
+                        if (checklistItem) {
+                            return this.habitica.deleteChecklistItem(habiticaTask.id, checklistItem.id);
+                        } else {
+                            return this.deleteTask(item);
+                        }
+                    } else if (_.includes(aliases, item.id + '')) {
+                        return this.updateTask(item, config.aliases[item.id]);
+                    } else {
+                        if (item.parent_id == null) {
+                            // don't create new tasks in habitica which are subtasks in todoist = those should be checklist items!
+                            return this.createTask(item)
+                                .then(newItem => this.config.habiticaTasks.push(newItem));
+                        } else {
+                            this.logger.info("skipping child task", item.content);
+                        }
+                    }
+                })
+        )
+            .then(() => config);
+    }
+
+    findHabiticaTask(taskId) {
+        return this.config.habiticaTasks.find(i => i.alias = taskId);
     }
 
     updateTask(todoistTask) {
         this.logger.info('Updating habatica task', todoistTask.id, todoistTask.content);
-        return this.habitica.updateTask(this.createHabiticaTask(todoistTask));
+        if (todoistTask.parent !== null) {
+            // delete tasks in habitica which have become child tasks in todoist
+            return this.deleteTask(todoistTask);
+        } else {
+            return this.habitica.updateTask(this.createHabiticaTask(todoistTask));
+        }
     }
 
     updateDailies(config) {
@@ -256,25 +360,5 @@ module.exports = class Sync {
         }
         repeat[day] = true;
         return repeat;
-    }
-
-    updateTasks(config) {
-        const isProjectAllowed = this.filterIgnoredProjects(config);
-        return Promise.all(
-            config.items
-                .filter(isProjectAllowed)
-                .filter(t => !this.isTaskRecurring(t))
-                .map(item => {
-                    const aliases = config.habiticaTasks.map(t => t.alias);
-                    if (item.is_deleted) {
-                        return this.deleteTask(item);
-                    } else if (_.includes(aliases, item.id + '')) {
-                        return this.updateTask(item, config.aliases[item.id]);
-                    } else {
-                        return this.createTask(item);
-                    }
-                })
-        )
-            .then(() => config);
     }
 }

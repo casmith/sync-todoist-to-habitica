@@ -18,7 +18,7 @@ module.exports = class {
         return this.request.post({
             url: `https://habitica.com/api/v3/tasks/user`,
             form: task
-        });
+        }).then(res => res.data);
     }
 
     getTask(taskId) {
@@ -70,5 +70,31 @@ module.exports = class {
         return this.request.post({
             url: `https://habitica.com/api/v3/tasks/${taskId}/score/up`
         });
+    }
+
+    createChecklistItem(taskId, text) {
+        return this.request.post({
+            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist`,
+            form: {text}
+        });
+    }
+
+    updateChecklistItem(taskId, itemId, text) {
+        return this.request.put({
+            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}`,
+            form: {text}
+        });
+    }
+
+    deleteChecklistItem(taskId, itemId) {
+        return this.request.delete({
+            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}`
+        });
+    }
+
+    scoreChecklistItem(taskId, itemId) {
+        return this.request.post({
+            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}/score`
+        }).catch(e => Promise.reject("failed to score up a task"));
     }
 }

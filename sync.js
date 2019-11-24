@@ -82,6 +82,19 @@ module.exports = class Sync {
         }
     }
 
+    findRootTask(todoistTask) {
+        let task = todoistTask;
+        let parentId = todoistTask.parent || todoistTask.parent_id;
+        while (parentId) {
+            task = this.config.todoistLookup[parentId];
+            if (!task) {
+                throw Error(`Task not found for parentId [${parentId}]`)
+            }
+            parentId = task.parent || task.parent_id;
+        }
+        return task;
+    }
+
     getHabiticaTasks(config) {
         this.logger.info('Getting habitica tasks');
         return this.habitica.listTasks()
@@ -95,6 +108,7 @@ module.exports = class Sync {
             .then(() => {
                 return this.habitica.listDailies().then(dailies => {
                     config.habiticaDailies = dailies;
+                    this.logger.info("Finished loading habitica tasks");
                 });
             })
             .then(() => config)
@@ -109,11 +123,16 @@ module.exports = class Sync {
     }
 
     getSyncData(config, syncToken) {
+        config.todoistLookup = {};
         return this.todoist.sync(syncToken)
             .then(sync => {
                 config.sync = sync;
                 config.sync.checklistItems = sync.items
                     .filter(item => item.parent_id);
+
+                // TODO: normalize the data structure so it confirms with the task list below
+                config.sync.items.forEach(i => config.todoistLookup[i.id] = i);
+
                 return config;
             })
             .then(config => {
@@ -121,6 +140,7 @@ module.exports = class Sync {
                 return this.todoist.listTasks(syncToken)
                     .then(tasks => {
                         this.logger.info("Done fetching all todoist tasks");
+                        tasks.forEach(i => config.todoistLookup[i.id] = i);
                         config.todoistTasks = tasks;
                         return config;
                     });
@@ -178,10 +198,11 @@ module.exports = class Sync {
         const deletedItems = checklistItems.filter(i => i.is_deleted);
         return Promise.all(checklistItems
                 .map(todoistItem => {
-                    const taskId = todoistItem.parent_id;
-                    const habiticaTask = config.habiticaTasks.find(i => i.alias = todoistItem.id);
+                    const parentTask = this.findRootTask(todoistItem);
+                    const taskId = parentTask.id;
+                    const habiticaTask = config.habiticaTasks.find(i => i.alias == parentTask.id);
                     if (!habiticaTask) {
-                        this.logger.warn("Could not find a habitica task for todoist item", todoistItem.id);
+                        this.logger.warn("Could not find a habitica task for todoist item", parentTask.id);
                         return;
                     }
                     const checklist = habiticaTask.checklist;
@@ -193,7 +214,12 @@ module.exports = class Sync {
                             return this.habitica.deleteChecklistItem(taskId, itemId);
                         } else {
                             return this.habitica.updateChecklistItem(taskId, itemId, content)
-                                .then(() => todoistItem.checked && this.habitica.scoreChecklistItem(taskId, itemId));
+                                .then(() => {
+                                    console.log(habiticaChecklistItem);
+                                    if (todoistItem.checked && !habiticaChecklistItem.completed) {
+                                        return this.habitica.scoreChecklistItem(taskId, itemId);
+                                    }
+                                });
                         }
                     } else {
                         return todoistItem.is_deleted ||

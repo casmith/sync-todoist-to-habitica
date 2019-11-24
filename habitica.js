@@ -14,11 +14,13 @@ module.exports = class {
         this.request = request.defaults({headers});
     }
 
+    post(url, form) {
+        return this.request.post({url, form, json: true})
+            .then(res => res.data);
+    }
+
     createTask (task) {
-        return this.request.post({
-            url: `https://habitica.com/api/v3/tasks/user`,
-            form: task
-        }).then(res => res.data);
+        return this.post(`https://habitica.com/api/v3/tasks/user`, task);
     }
 
     getTask(taskId) {

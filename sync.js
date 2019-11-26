@@ -37,7 +37,7 @@ module.exports = class Sync {
                 const completed = stats['days_items'][0].total_completed;
                 this.logger.info('Daily goal:', goal, ' Completed:', completed);
                 if (completed >= goal && (!lastDailyGoal || today.isAfter(lastRun.lastDailyGoal, 'd'))) {
-                    return this.scoreDailyGoalTask(config);
+                    return this.scoreDailyGoalTask(config, today);
                 }
             })
             .then(() => config);
@@ -166,11 +166,11 @@ module.exports = class Sync {
             });
     }
 
-    scoreDailyGoalTask(config) {
+    scoreDailyGoalTask(config, today) {
         const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
         if (dailyGoalTask) {
-            this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"');
-            lastRun.lastDailyGoal = today;
+            this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"', dailyGoalTask._id);
+            config.lastRun.lastDailyGoal = today;
             return this.habitica.scoreTask(dailyGoalTask._id);
         } else {
             this.logger.info('"Todoist: Daily Goal" task not configured');

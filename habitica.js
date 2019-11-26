@@ -4,9 +4,10 @@ const request = require('request-promise');
 
 module.exports = class {
 
-    constructor (apiUser, apiKey) {
+    constructor (apiUser, apiKey, logger) {
         this.apiUser = apiUser;
         this.apiKey = apiKey;
+	this.logger = logger;
         const headers = {
             ['x-api-user']: this.apiUser,
             ['x-api-key']: this.apiKey

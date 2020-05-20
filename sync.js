@@ -148,7 +148,7 @@ module.exports = class Sync {
     }
 
     isTaskRecurring(item) {
-        return _.includes(_.toLower(item.date_string), 'every');
+        return _.get(item, 'due.is_recurring', false);
     }
 
     scoreCompletedTasks(config) {
@@ -300,7 +300,21 @@ module.exports = class Sync {
                 .filter(isProjectAllowed)
                 .filter(this.isTaskRecurring)
                 .map(item => {
-                    this.logger.info('Skipping daily item ' + item);
+                    // if the recurring task's due date is in the future, this means it was probably completed
+                    // unless it was simply created with a future due date
+                    const dueDate = _.get(item, 'due.date');
+                    if (dueDate && moment(dueDate).isAfter(moment())) {
+                        // try to find a matching "daily" in habitica and score it
+                        const task = config.habiticaDailies.find(i => i.text.toLowerCase() === item.content.toLowerCase());
+                        if (task) {
+                            this.logger.info('Scoring daily task', task.text);
+                            return this.habitica.scoreTask(task._id);
+                        } else {
+                            this.logger.warn(`Recurring task completed but no daily could be found in habitica called [${item.content}]`)
+                        }
+                    } else {
+                        this.logger.info(`Skipping newly-created daily [${item.content}]`);
+                    }
                 })
 
         )

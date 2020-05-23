@@ -317,47 +317,6 @@ module.exports = class Sync {
             .then(() => config);
     }
 
-    calculateFrequency(dateExpr) {
-        if (dateExpr.includes('weekday')) {
-            return {
-                frequency: 'weekly',
-                repeat: REPEAT_WEEKDAYS
-            }
-        }
-
-        if (dateExpr === 'every week' || dateExpr === 'weekly') {
-            return {
-                frequency: 'weekly'
-            }
-        }
-
-
-        if (dateExpr.startsWith('every other')) {
-            const dayExpr = dateExpr.substr(12).trim();
-            return {
-                everyX: 2,
-                frequency: 'weekly',
-                repeat: this.getRepeat(this.getDay(dayExpr))
-            }
-        }
-
-        if (dateExpr === 'every month' || dateExpr === 'monthly') {
-            return {
-                frequency: 'monthly'
-            }
-        }
-
-        if (dateExpr === 'every year' || dateExpr === 'yearly') {
-            return {
-                frequency: 'yearly'
-            }
-        }
-
-        return {
-            frequency: 'daily'
-        }
-    }
-
     getDay(dayExpr) {
         switch(_.toLower(dayExpr)) {
             case 'monday':
@@ -382,19 +341,5 @@ module.exports = class Sync {
             case 'f':
                 return 'f';
         }
-    }
-
-    getRepeat(day) {
-        const repeat = {
-            su: false,
-            m: false,
-            t: false,
-            w: false,
-            th: false,
-            f: false,
-            s: false
-        }
-        repeat[day] = true;
-        return repeat;
     }
 }

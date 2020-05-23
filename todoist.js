@@ -5,6 +5,16 @@ const request = require('request-promise');
 const uuidv4 = require('uuid/v4');
 const baseUrl = 'https://api.todoist.com/rest/v1';
 
+const REPEAT_WEEKDAYS = {
+    su: false,
+    m: true,
+    t: true,
+    w: true,
+    th: true,
+    f: true,
+    s: false
+};
+
 module.exports = class {
 
     constructor(apiToken, logger) {
@@ -15,6 +25,87 @@ module.exports = class {
             }
         });
         this.logger = logger;
+    }
+
+    calculateFrequency(dateExpr) {
+        if (dateExpr.includes('weekday')) {
+            return {
+                frequency: 'weekly',
+                repeat: REPEAT_WEEKDAYS
+            }
+        }
+
+        if (dateExpr === 'every week' || dateExpr === 'weekly') {
+            return {
+                frequency: 'weekly'
+            }
+        }
+
+
+        if (dateExpr.startsWith('every other')) {
+            const dayExpr = dateExpr.substr(12).trim();
+            return {
+                everyX: 2,
+                frequency: 'weekly',
+                repeat: this.getRepeat(this.getDay(dayExpr))
+            }
+        }
+
+        if (dateExpr === 'every month' || dateExpr === 'monthly') {
+            return {
+                frequency: 'monthly'
+            }
+        }
+
+        if (dateExpr === 'every year' || dateExpr === 'yearly') {
+            return {
+                frequency: 'yearly'
+            }
+        }
+
+        return {
+            frequency: 'daily'
+        }
+    }
+
+    getDay(dayExpr) {
+        switch(_.toLower(dayExpr)) {
+            case 'monday':
+            case 'mon':
+            case 'm':
+                return 'm';
+            case 'tuesday':
+            case 'tues':
+            case 'tue':
+            case 't':
+                return 't';
+            case 'wednesday':
+            case 'wed':
+            case 'w':
+                return 'w';
+            case 'thursday':
+            case 'thurs':
+            case 'th':
+                return 'th';
+            case 'friday':
+            case 'fri':
+            case 'f':
+                return 'f';
+        }
+    }
+
+    getRepeat(day) {
+        const repeat = {
+            su: false,
+            m: false,
+            t: false,
+            w: false,
+            th: false,
+            f: false,
+            s: false
+        }
+        repeat[day] = true;
+        return repeat;
     }
 
     createTask(item) {

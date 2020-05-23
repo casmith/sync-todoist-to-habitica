@@ -1,8 +1,8 @@
 'use strict';
 
+const _ = require('lodash');
 const request = require('request-promise');
 const uuidv4 = require('uuid/v4');
-
 const baseUrl = 'https://api.todoist.com/rest/v1';
 
 module.exports = class {
@@ -43,6 +43,10 @@ module.exports = class {
     getTask(taskId) {
         return this.request.get(`${baseUrl}/tasks/${taskId}`)
             .then(r => JSON.parse(r)); 
+    }
+
+    isTaskRecurring(task) {
+        return _.get(task, 'due.is_recurring', false);
     }
 
     listProjects() {

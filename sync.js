@@ -147,10 +147,6 @@ module.exports = class Sync {
             });
     }
 
-    isTaskRecurring(item) {
-        return _.get(item, 'due.is_recurring', false);
-    }
-
     scoreCompletedTasks(config) {
         const sync = config.sync;
         return Promise.all(sync.items
@@ -243,7 +239,7 @@ module.exports = class Sync {
         return Promise.all(
             config.items
                 .filter(isProjectAllowed)
-                .filter(t => !this.isTaskRecurring(t))
+                .filter(t => !this.todoist.isTaskRecurring(t))
                 .map(item => {
                     const aliases = config.habiticaTasks.map(t => t.alias);
                     if (item.is_deleted) {
@@ -298,7 +294,7 @@ module.exports = class Sync {
         return Promise.all(
             config.items
                 .filter(isProjectAllowed)
-                .filter(this.isTaskRecurring)
+                .filter(this.todoist.isTaskRecurring)
                 .map(item => {
                     // if the recurring task's due date is in the future, this means it was probably completed
                     // unless it was simply created with a future due date

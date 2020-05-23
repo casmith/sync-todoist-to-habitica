@@ -20,6 +20,10 @@ module.exports = class Sync {
     sync(lastRun) {
         const config = require('./config.json');
         this.config = config;
+        this.config.append = function (key, obj) {
+            this[key] = obj;
+            return this;
+        }
 
         lastRun = lastRun || {};
         config.lastRun = lastRun;
@@ -54,10 +58,7 @@ module.exports = class Sync {
 
     getProjects(config) {
         return this.todoist.listProjects()
-            .then(projects => {
-                config.projects = projects;
-                return config;
-            });
+            .then(projects => config.append('projects', projects));
     }
 
     getSyncData(config, syncToken) {
@@ -77,7 +78,6 @@ module.exports = class Sync {
                 this.logger.info("Fetching all todoist tasks");
                 return this.todoist.listTasks(syncToken)
                     .then(tasks => {
-                        this.logger.info("Done fetching all todoist tasks");
                         tasks.forEach(i => config.todoistLookup[i.id] = i);
                         config.todoistTasks = tasks;
                         return config;
@@ -94,10 +94,7 @@ module.exports = class Sync {
                     this.logger.info('Scoring task', item.id, item.content);
                     return this.habitica.scoreTask(item.id).catch(x => console.warn(x));
                 }))
-            .then(() => {
-                config.items = sync.items.filter(item => !item.checked);
-                return config;
-            });
+            .then(() => config.append('items', sync.items.filter(item => !item.checked)));
     }
 
     updateDailies(config) {
@@ -204,14 +201,7 @@ module.exports = class Sync {
 
     deleteTask(task) {
         this.logger.info('Deleting habitica task', task.content, task.id);
-        return this.habitica.deleteTask(task.id)
-            .catch(err => {
-                if (err.statusCode === 404) {
-                    this.logger.warn('Deleting task that no longer exists', task.id);
-                } else {
-                    return Promise.reject(err);
-                }
-            });
+        return this.habitica.deleteTask(task.id);
     }
 
     filterIgnoredProjects (config) {
@@ -284,7 +274,7 @@ module.exports = class Sync {
             this.logger.info('"Todoist: Daily Goal" task not configured');
         }
     }
-    
+
     /**
      * Generates the checklist item text for habitica from a todoist task
      *

@@ -7,7 +7,7 @@ module.exports = class {
     constructor (apiUser, apiKey, logger) {
         this.apiUser = apiUser;
         this.apiKey = apiKey;
-	this.logger = logger;
+	    this.logger = logger;
         const headers = {
             ['x-api-user']: this.apiUser,
             ['x-api-key']: this.apiKey
@@ -40,6 +40,12 @@ module.exports = class {
     deleteTask (taskId) {
         return this.request.delete({
             url: 'https://habitica.com/api/v3/tasks/' + taskId,
+        }).catch(err => {
+            if (err.statusCode === 404) {
+                this.logger.warn('Deleting task that no longer exists', task.id);
+            } else {
+                return Promise.reject(err);
+            }
         });
     }
 

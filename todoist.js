@@ -27,6 +27,61 @@ module.exports = class {
         this.logger = logger;
     }
 
+    createTask(item) {
+        return this.request.post({
+            url: `${baseUrl}/tasks`, 
+            body: JSON.stringify(item),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
+    deleteTask(id) {
+        return this.request.delete(`${baseUrl}/tasks/${id}`);
+    }
+
+    deleteAllTasks() {
+        return this.listTasks().then(items => Promise.all(items.map(i => this.deleteTask(i.id))));
+    }
+
+    getStats() {
+        return this.request.get('https://api.todoist.com/sync/v8/completed/get_stats')
+            .then(r => JSON.parse(r));
+    }
+
+    getTask(taskId) {
+        return this.request.get(`${baseUrl}/tasks/${taskId}`)
+            .then(r => JSON.parse(r)); 
+    }
+
+    isTaskRecurring(task) {
+        return _.get(task, 'due.is_recurring', false);
+    }
+
+    listProjects() {
+        return this.request.get(`${baseUrl}/projects`)
+            .then(r => JSON.parse(r));
+    }
+
+
+    listTasks() {
+        return this.request.get(`${baseUrl}/tasks`)
+            .then(r => {
+                this.logger.info("Done fetching all todoist tasks");
+                return JSON.parse(r)
+            });
+    }
+
+    sync(token) {
+        const url = 'https://api.todoist.com/sync/v8/sync?resource_types=["all"]&sync_token=' + token;
+        this.logger.info('Sync Token:', token);
+        return this.request.get({
+                url: url
+            })
+            .then(r => JSON.parse(r));
+    }
+
     calculateFrequency(dateExpr) {
         if (dateExpr.includes('weekday')) {
             return {
@@ -106,57 +161,5 @@ module.exports = class {
         }
         repeat[day] = true;
         return repeat;
-    }
-
-    createTask(item) {
-        return this.request.post({
-            url: `${baseUrl}/tasks`, 
-            body: JSON.stringify(item),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-    }
-
-    deleteTask(id) {
-        return this.request.delete(`${baseUrl}/tasks/${id}`);
-    }
-
-    deleteAllTasks() {
-        return this.listTasks().then(items => Promise.all(items.map(i => this.deleteTask(i.id))));
-    }
-
-    getStats() {
-        return this.request.get('https://api.todoist.com/sync/v8/completed/get_stats')
-            .then(r => JSON.parse(r));
-    }
-
-    getTask(taskId) {
-        return this.request.get(`${baseUrl}/tasks/${taskId}`)
-            .then(r => JSON.parse(r)); 
-    }
-
-    isTaskRecurring(task) {
-        return _.get(task, 'due.is_recurring', false);
-    }
-
-    listProjects() {
-        return this.request.get(`${baseUrl}/projects`)
-            .then(r => JSON.parse(r));
-    }
-
-
-    listTasks() {
-        return this.request.get(`${baseUrl}/tasks`)
-            .then(r => JSON.parse(r));
-    }
-
-    sync(token) {
-        const url = 'https://api.todoist.com/sync/v8/sync?resource_types=["all"]&sync_token=' + token;
-        this.logger.info('Sync Token:', token);
-        return this.request.get({
-                url: url
-            })
-            .then(r => JSON.parse(r));
     }
 }

@@ -4,16 +4,6 @@ const _ = require('lodash'),
     moment = require('moment'),
     jsonFile = require('jsonfile');
 
-const REPEAT_WEEKDAYS = {
-    su: false,
-    m: true,
-    t: true,
-    w: true,
-    th: true,
-    f: true,
-    s: false
-};
-
 module.exports = class Sync {
     constructor (todoist, habitica, logger) {
         this.priorityMap = {
@@ -25,6 +15,158 @@ module.exports = class Sync {
         this.habitica = habitica;
         this.logger = logger;
         this.todoist = todoist;        
+    }
+
+    sync(lastRun) {
+        const config = require('./config.json');
+        this.config = config;
+
+        lastRun = lastRun || {};
+        config.lastRun = lastRun;
+        return this.getHabiticaTasks(config)
+            .then(() => this.getProjects(config))
+            .then(config => this.getSyncData(config, lastRun.syncToken))
+            .then(config => this.scoreCompletedTasks(config))
+            .then(config => this.updateDailies(config))
+            .then(config => this.updateTasks(config))
+            .then(config => this.checkDailyGoal(config))
+            .then(config => this.syncChecklistItems(config));
+    }
+
+    getHabiticaTasks(config) {
+        this.logger.info('Getting habitica tasks');
+        return this.habitica.listTasks()
+            .then(tasks => {
+                config.habiticaTasks = tasks;
+                config.aliases = _.reduce(tasks, (acc, task) => {
+                    acc[task.alias] = task._id;
+                    return acc;
+                }, {});
+            })
+            .then(() => {
+                return this.habitica.listDailies().then(dailies => {
+                    config.habiticaDailies = dailies;
+                    this.logger.info("Finished loading habitica tasks");
+                });
+            })
+            .then(() => config)
+    }
+
+    getProjects(config) {
+        return this.todoist.listProjects()
+            .then(projects => {
+                config.projects = projects;
+                return config;
+            });
+    }
+
+    getSyncData(config, syncToken) {
+        config.todoistLookup = {};
+        return this.todoist.sync(syncToken)
+            .then(sync => {
+                config.sync = sync;
+                config.sync.checklistItems = sync.items
+                    .filter(item => item.parent_id);
+
+                // TODO: normalize the data structure so it confirms with the task list below
+                config.sync.items.forEach(i => config.todoistLookup[i.id] = i);
+
+                return config;
+            })
+            .then(config => {
+                this.logger.info("Fetching all todoist tasks");
+                return this.todoist.listTasks(syncToken)
+                    .then(tasks => {
+                        this.logger.info("Done fetching all todoist tasks");
+                        tasks.forEach(i => config.todoistLookup[i.id] = i);
+                        config.todoistTasks = tasks;
+                        return config;
+                    });
+            });
+    }
+
+    scoreCompletedTasks(config) {
+        const sync = config.sync;
+        return Promise.all(sync.items
+                .filter(item => !item.parent_id)
+                .filter(item => item.checked)
+                .map(item => {
+                    this.logger.info('Scoring task', item.id, item.content);
+                    return this.habitica.scoreTask(item.id).catch(x => console.warn(x));
+                }))
+            .then(() => {
+                config.items = sync.items.filter(item => !item.checked);
+                return config;
+            });
+    }
+
+    updateDailies(config) {
+        const isProjectAllowed = this.filterIgnoredProjects(config);
+        return Promise.all(
+            config.items
+                .filter(isProjectAllowed)
+                .filter(this.todoist.isTaskRecurring)
+                .map(item => {
+                    // if the recurring task's due date is in the future, this means it was probably completed
+                    // unless it was simply created with a future due date
+                    const dueDate = _.get(item, 'due.date');
+                    if (dueDate && moment(dueDate).isAfter(moment())) {
+                        // try to find a matching "daily" in habitica and score it
+                        const task = config.habiticaDailies.find(i => i.text.toLowerCase() === item.content.toLowerCase());
+                        if (task) {
+                            this.logger.info('Scoring daily task', task.text);
+                            return this.habitica.scoreTask(task._id);
+                        } else {
+                            this.logger.warn(`Recurring task completed but no daily could be found in habitica called [${item.content}]`)
+                        }
+                    } else {
+                        this.logger.info(`Skipping newly-created daily [${item.content}]`);
+                    }
+                })
+
+        )
+            .then(() => config);
+    }
+
+    updateTasks(config) {
+        const isProjectAllowed = this.filterIgnoredProjects(config);
+        return Promise.all(
+            config.items
+                .filter(isProjectAllowed)
+                .filter(t => !this.todoist.isTaskRecurring(t))
+                .map(item => {
+                    const aliases = config.habiticaTasks.map(t => t.alias);
+                    if (item.is_deleted) {
+                        let checklistItem = null;
+                        let habiticaTask = null;
+                        this.config.habiticaTasks.forEach(t => {
+                            const checklistPrefix = `[${item.id}]`;
+                            const found = t.checklist.find(li => li.text.includes(checklistPrefix));
+                            if (found) {
+                                checklistItem = found;
+                                habiticaTask = t;
+                                return false;
+                            }
+                        });
+                        if (checklistItem) {
+                            return this.habitica.deleteChecklistItem(habiticaTask.id, checklistItem.id);
+                        } else {
+                            return this.deleteTask(item);
+                        }
+                    } else if (_.includes(aliases, item.id + '')) {
+                        return this.updateTask(item, config.aliases[item.id]);
+                    } else {
+                        if (item.parent_id == null) {
+                            // don't create new tasks in habitica which are subtasks in todoist = those should be checklist items!
+                            return this.createTask(item)
+                                .then(newItem => this.config.habiticaTasks.push(newItem));
+                        } else {
+                            this.logger.info("skipping child task", item.content);
+                        }
+                    }
+                })
+        )
+            .then(() => config);
     }
 
     checkDailyGoal(config) {
@@ -95,100 +237,6 @@ module.exports = class Sync {
         return task;
     }
 
-    getHabiticaTasks(config) {
-        this.logger.info('Getting habitica tasks');
-        return this.habitica.listTasks()
-            .then(tasks => {
-                config.habiticaTasks = tasks;
-                config.aliases = _.reduce(tasks, (acc, task) => {
-                    acc[task.alias] = task._id;
-                    return acc;
-                }, {});
-            })
-            .then(() => {
-                return this.habitica.listDailies().then(dailies => {
-                    config.habiticaDailies = dailies;
-                    this.logger.info("Finished loading habitica tasks");
-                });
-            })
-            .then(() => config)
-    }
-
-    getProjects(config) {
-        return this.todoist.listProjects()
-            .then(projects => {
-                config.projects = projects;
-                return config;
-            });
-    }
-
-    getSyncData(config, syncToken) {
-        config.todoistLookup = {};
-        return this.todoist.sync(syncToken)
-            .then(sync => {
-                config.sync = sync;
-                config.sync.checklistItems = sync.items
-                    .filter(item => item.parent_id);
-
-                // TODO: normalize the data structure so it confirms with the task list below
-                config.sync.items.forEach(i => config.todoistLookup[i.id] = i);
-
-                return config;
-            })
-            .then(config => {
-                this.logger.info("Fetching all todoist tasks");
-                return this.todoist.listTasks(syncToken)
-                    .then(tasks => {
-                        this.logger.info("Done fetching all todoist tasks");
-                        tasks.forEach(i => config.todoistLookup[i.id] = i);
-                        config.todoistTasks = tasks;
-                        return config;
-                    });
-            });
-    }
-
-    scoreCompletedTasks(config) {
-        const sync = config.sync;
-        return Promise.all(sync.items
-                .filter(item => !item.parent_id)
-                .filter(item => item.checked)
-                .map(item => {
-                    this.logger.info('Scoring task', item.id, item.content);
-                    return this.habitica.scoreTask(item.id).catch(x => console.warn(x));
-                }))
-            .then(() => {
-                config.items = sync.items.filter(item => !item.checked);
-                return config;
-            });
-    }
-
-    scoreDailyGoalTask(config, today) {
-        const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
-        if (dailyGoalTask) {
-            this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"', dailyGoalTask._id);
-            config.lastRun.lastDailyGoal = today;
-            return this.habitica.scoreTask(dailyGoalTask._id);
-        } else {
-            this.logger.info('"Todoist: Daily Goal" task not configured');
-        }
-    }
-
-    sync(lastRun) {
-        const config = require('./config.json');
-        this.config = config;
-
-        lastRun = lastRun || {};
-        config.lastRun = lastRun;
-        return this.getHabiticaTasks(config)
-            .then(() => this.getProjects(config))
-            .then(config => this.getSyncData(config, lastRun.syncToken))
-            .then(config => this.scoreCompletedTasks(config))
-            .then(config => this.updateDailies(config))
-            .then(config => this.updateTasks(config))
-            .then(config => this.checkDailyGoal(config))
-            .then(config => this.syncChecklistItems(config));
-    }
-
     syncChecklistItems(config) {
         const checklistItems = config.sync.checklistItems || [];
         const deletedItems = checklistItems.filter(i => i.is_deleted);
@@ -225,6 +273,18 @@ module.exports = class Sync {
             .then(() => config);
     }
 
+
+    scoreDailyGoalTask(config, today) {
+        const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
+        if (dailyGoalTask) {
+            this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"', dailyGoalTask._id);
+            config.lastRun.lastDailyGoal = today;
+            return this.habitica.scoreTask(dailyGoalTask._id);
+        } else {
+            this.logger.info('"Todoist: Daily Goal" task not configured');
+        }
+    }
+    
     /**
      * Generates the checklist item text for habitica from a todoist task
      *
@@ -232,47 +292,6 @@ module.exports = class Sync {
      */
     createChecklistItem(todoistTask) {
         return `[${todoistTask.id}] ${todoistTask.content}`;
-    }
-
-    updateTasks(config) {
-        const isProjectAllowed = this.filterIgnoredProjects(config);
-        return Promise.all(
-            config.items
-                .filter(isProjectAllowed)
-                .filter(t => !this.todoist.isTaskRecurring(t))
-                .map(item => {
-                    const aliases = config.habiticaTasks.map(t => t.alias);
-                    if (item.is_deleted) {
-                        let checklistItem = null;
-                        let habiticaTask = null;
-                        this.config.habiticaTasks.forEach(t => {
-                            const checklistPrefix = `[${item.id}]`;
-                            const found = t.checklist.find(li => li.text.includes(checklistPrefix));
-                            if (found) {
-                                checklistItem = found;
-                                habiticaTask = t;
-                                return false;
-                            }
-                        });
-                        if (checklistItem) {
-                            return this.habitica.deleteChecklistItem(habiticaTask.id, checklistItem.id);
-                        } else {
-                            return this.deleteTask(item);
-                        }
-                    } else if (_.includes(aliases, item.id + '')) {
-                        return this.updateTask(item, config.aliases[item.id]);
-                    } else {
-                        if (item.parent_id == null) {
-                            // don't create new tasks in habitica which are subtasks in todoist = those should be checklist items!
-                            return this.createTask(item)
-                                .then(newItem => this.config.habiticaTasks.push(newItem));
-                        } else {
-                            this.logger.info("skipping child task", item.content);
-                        }
-                    }
-                })
-        )
-            .then(() => config);
     }
 
     findHabiticaTask(taskId) {
@@ -286,60 +305,6 @@ module.exports = class Sync {
             return this.deleteTask(todoistTask);
         } else {
             return this.habitica.updateTask(this.createHabiticaTask(todoistTask));
-        }
-    }
-
-    updateDailies(config) {
-        const isProjectAllowed = this.filterIgnoredProjects(config);
-        return Promise.all(
-            config.items
-                .filter(isProjectAllowed)
-                .filter(this.todoist.isTaskRecurring)
-                .map(item => {
-                    // if the recurring task's due date is in the future, this means it was probably completed
-                    // unless it was simply created with a future due date
-                    const dueDate = _.get(item, 'due.date');
-                    if (dueDate && moment(dueDate).isAfter(moment())) {
-                        // try to find a matching "daily" in habitica and score it
-                        const task = config.habiticaDailies.find(i => i.text.toLowerCase() === item.content.toLowerCase());
-                        if (task) {
-                            this.logger.info('Scoring daily task', task.text);
-                            return this.habitica.scoreTask(task._id);
-                        } else {
-                            this.logger.warn(`Recurring task completed but no daily could be found in habitica called [${item.content}]`)
-                        }
-                    } else {
-                        this.logger.info(`Skipping newly-created daily [${item.content}]`);
-                    }
-                })
-
-        )
-            .then(() => config);
-    }
-
-    getDay(dayExpr) {
-        switch(_.toLower(dayExpr)) {
-            case 'monday':
-            case 'mon':
-            case 'm':
-                return 'm';
-            case 'tuesday':
-            case 'tues':
-            case 'tue':
-            case 't':
-                return 't';
-            case 'wednesday':
-            case 'wed':
-            case 'w':
-                return 'w';
-            case 'thursday':
-            case 'thurs':
-            case 'th':
-                return 'th';
-            case 'friday':
-            case 'fri':
-            case 'f':
-                return 'f';
         }
     }
 }

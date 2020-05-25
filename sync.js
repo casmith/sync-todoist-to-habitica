@@ -109,7 +109,7 @@ module.exports = class Sync {
                     const dueDate = _.get(item, 'due.date');
                     if (dueDate && moment(dueDate).isAfter(moment())) {
                         // try to find a matching "daily" in habitica and score it
-                        const task = config.habiticaDailies.find(i => i.text.toLowerCase() === item.content.toLowerCase());
+                        const task = config.habiticaDailies.find(i => i.text.toLowerCase().trim() === item.content.toLowerCase().trim());
                         if (task) {
                             this.logger.info('Scoring daily task', task.text);
                             return this.habitica.scoreTask(task._id);

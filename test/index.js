@@ -4,7 +4,7 @@ const sinon = require('sinon');
 
 beforeEach(function() {
   if (null == this.sinon) {
-    this.sinon = sinon.sandbox.create();
+    this.sinon = sinon.createSandbox();
   } else {
     this.sinon.restore();
   }

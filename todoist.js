@@ -2,7 +2,6 @@
 
 const _ = require('lodash');
 const request = require('request-promise');
-const uuidv4 = require('uuid/v4');
 const baseUrl = 'https://api.todoist.com/rest/v1';
 
 const REPEAT_WEEKDAYS = {

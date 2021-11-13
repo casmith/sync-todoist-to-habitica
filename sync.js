@@ -92,7 +92,7 @@ module.exports = class Sync {
                 .filter(item => item.checked)
                 .map(item => {
                     this.logger.info('Scoring task', item.id, item.content);
-                    return this.habitica.scoreTask(item.id).catch(x => console.warn(x));
+                    return this.habitica.scoreTask(item.id).catch(e => console.warn('Failed to score a task', e));
                 }))
             .then(() => config.append('items', sync.items.filter(item => !item.checked)));
     }
@@ -112,7 +112,7 @@ module.exports = class Sync {
                         const task = config.habiticaDailies.find(i => i.text.toLowerCase().trim() === item.content.toLowerCase().trim());
                         if (task) {
                             this.logger.info('Scoring daily task', task.text);
-                            return this.habitica.scoreTask(task._id);
+                            return this.habitica.scoreTask(task._id).catch(e => console.warn("Failed to score a task", e));
                         } else {
                             this.logger.warn(`Recurring task completed but no daily could be found in habitica called [${item.content}]`)
                         }

@@ -42,7 +42,7 @@ module.exports = class {
             url: 'https://habitica.com/api/v3/tasks/' + taskId,
         }).catch(err => {
             if (err.statusCode === 404) {
-                this.logger.warn('Deleting task that no longer exists', task.id);
+                this.logger.warn('Deleting task that no longer exists', taskId);
             } else {
                 return Promise.reject(err);
             }

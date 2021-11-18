@@ -17,9 +17,9 @@ const options = {
           (options.meta && Object.keys(options.meta).length ? '\n\t'+ JSON.stringify(options.meta) : '' );
       }
     };
-module.exports = new (winston.Logger)({
+module.exports = (configDir) => new (winston.Logger)({
   transports: [
     new (winston.transports.Console)(options),
-    new (winston.transports.File)(_.extend({}, options, { filename: 'sync.log' }))
+    new (winston.transports.File)(_.extend({}, options, { filename: configDir + 'sync.log' }))
   ]
 });

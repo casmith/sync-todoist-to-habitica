@@ -10,7 +10,7 @@ const resolveConfigDir = () => {
 const configDir = resolveConfigDir();
 
 const config = require(configDir + "config.json");
-const logger = require('./logger');
+const logger = require('./logger')(configDir);
 const Habitica = require('./habitica');
 const Todoist = require('./todoist');
 const Sync = require('./sync');

@@ -3,7 +3,11 @@
 const _ = require('lodash');
 const jsonFile = require('jsonfile')
 
-const configDir = process.env.CONFIG_DIR || "./";
+const resolveConfigDir = () => {
+    const configDir = process.env.CONFIG_DIR || "./";
+    return configDir.endsWith("/") ? configDir : configDir + "/";
+}
+const configDir = resolveConfigDir();
 
 const config = require(configDir + "config.json");
 const logger = require('./logger');
@@ -25,3 +29,4 @@ new Sync(todoist, habitica, logger, config)
         jsonFile.writeFileSync(configDir + 'lastRun.json', lastRun);
     })
     .then(() => logger.info('done'));
+

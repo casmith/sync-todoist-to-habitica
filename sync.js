@@ -5,7 +5,7 @@ const _ = require('lodash'),
     jsonFile = require('jsonfile');
 
 module.exports = class Sync {
-    constructor (todoist, habitica, logger) {
+    constructor (todoist, habitica, logger, config) {
         this.priorityMap = {
             1: 0.1,
             2: 1,
@@ -14,17 +14,16 @@ module.exports = class Sync {
         };
         this.habitica = habitica;
         this.logger = logger;
-        this.todoist = todoist;        
+        this.todoist = todoist;
+        this.config = config;
     }
 
     sync(lastRun) {
-        const config = require('./config.json');
-        this.config = config;
         this.config.append = function (key, obj) {
             this[key] = obj;
             return this;
         }
-
+        const config = this.config;
         lastRun = lastRun || {};
         config.lastRun = lastRun;
         return this.getHabiticaTasks(config)

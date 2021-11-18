@@ -3,7 +3,8 @@
 const _ = require('lodash');
 const jsonFile = require('jsonfile')
 
-const config = require('./config.json');
+const configPath = process.env.TODOIST_HABITICA_CONFIG_PATH || "./config.json";
+const config = require(configPath);
 const logger = require('./logger');
 const Habitica = require('./habitica');
 const Todoist = require('./todoist');
@@ -14,7 +15,7 @@ const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey, l
 const lastRun = jsonFile.readFileSync('lastRun.json', {throws: false}) || {};
 
 logger.info("Sync started");
-new Sync(todoist, habitica, logger)
+new Sync(todoist, habitica, logger, config)
     .sync(lastRun)
     .then(config => {
         const sync = config.sync;

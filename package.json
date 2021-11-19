@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 10000",
+    "test": "nyc --reporter=text --reporter=html  mocha --timeout 10000",
     "test:watch": "mocha --timeout 10000 --watch --growl"
   },
   "author": "",
@@ -21,6 +21,7 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "mocha": "8.1.0",
+    "nyc": "^15.1.0",
     "sinon": "^9.0.2"
   }
 }

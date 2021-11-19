@@ -264,6 +264,7 @@ module.exports = class Sync {
 
 
     scoreDailyGoalTask(config, today) {
+        // TODO: make this configurable
         const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
         if (dailyGoalTask) {
             this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"', dailyGoalTask._id);

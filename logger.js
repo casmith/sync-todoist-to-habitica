@@ -1,25 +1,19 @@
 'use strict';
 
-const _ = require('lodash');
-const moment = require('moment');
-const winston = require('winston');
+const { createLogger, format, transports } = require('winston');
+const { combine, timestamp, label, printf } = format;
 
-const config = winston.config;
-
-const options = {
-      timestamp: function() {
-        return moment().format('YYYY-MM-DD hh:mm:ss:SSS');
-      },
-      formatter: function(options) {
-        return options.timestamp() + ' ' +
-          config.colorize(options.level, options.level.toUpperCase()) + ' ' +
-          (options.message ? options.message : '') +
-          (options.meta && Object.keys(options.meta).length ? '\n\t'+ JSON.stringify(options.meta) : '' );
-      }
-    };
-module.exports = (configDir) => new (winston.Logger)({
-  transports: [
-    new (winston.transports.Console)(options),
-    new (winston.transports.File)(_.extend({}, options, { filename: configDir + 'sync.log' }))
-  ]
+const myFormat = printf(({ level, message, label, timestamp }) => {
+  return `${timestamp} ${level}: ${message}`;
 });
+
+module.exports = (configDir) => {
+    return createLogger({
+        format: combine(
+            timestamp(),
+            myFormat
+        ),
+        transports: [new transports.Console(), new transports.File({filename: configDir + "sync.log" })]
+    });
+};
+

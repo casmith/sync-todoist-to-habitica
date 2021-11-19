@@ -248,7 +248,6 @@ module.exports = class Sync {
                         } else {
                             return this.habitica.updateChecklistItem(taskId, itemId, content)
                                 .then(() => {
-                                    console.log(habiticaChecklistItem);
                                     if (todoistItem.checked && !habiticaChecklistItem.completed) {
                                         return this.habitica.scoreChecklistItem(taskId, itemId);
                                     }

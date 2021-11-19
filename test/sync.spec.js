@@ -11,7 +11,8 @@ class FakeHabitica {
         this.dailies = [
             {
                 _id: uuidv4(),
-                text: "Todoist: Daily Goal"
+                text: "Todoist: Daily Goal",
+                checklist: []
             }
         ]
     }
@@ -23,14 +24,28 @@ class FakeHabitica {
     }
     createTask(task) {
         if (!task) throw new Error('empty task');
-        this.tasks.push(task);
+        const newTask = {
+            id: uuidv4(),
+            alias: task.alias,
+            checklist: [],
+            text: task.text
+        }
+        this.tasks.push(newTask);
         return Promise.resolve();
     }
     scoreTask(id) {
         return this.listTasks().then(tasks => {
-            const task = tasks.find(t => t._id === id || t.alias === id);
+            const task = this.getTask(id);
             if (task) task.checked = true;
         });
+    }
+    deleteTask(id) {
+        const idx = this.tasks.findIndex(t => t._id === id || t.alias === id);
+        this.tasks.splice(idx, idx >= 0 ? 1 : 0);
+    }
+    getTask(id) {
+        return [].concat(this.tasks).concat(this.dailies)
+            .find(t => t._id === id || t.alias === id);
     }
 }
 
@@ -88,6 +103,27 @@ describe('sync', function () {
         const newTasks = await this.habitica.listTasks();
         const task = newTasks.find(t => t.text == 'Todoist: Daily Goal'); 
         expect(task.checked).to.equal(true);
+    });
+
+    it('deletes a task from habitica when it is deleted from todoist', async function () {
+        sinon.stub(this.todoist, 'getStats').returns(Promise.resolve(statsFor(6, 6)));
+        const tasks = {items: [{id: uuidv4(), checked: false, content: "My task"}]};
+        sinon.stub(this.todoist, 'sync').returns(Promise.resolve(tasks))
+        sinon.stub(this.todoist, 'listTasks').returns(Promise.resolve(tasks.items));
+        
+        const originalTasks = await this.habitica.listTasks();
+        
+        // sync to create the task in habitica
+        await this.sync.sync({});
+
+        // mark it as deleted 
+        tasks.items[0].is_deleted = true;
+
+        // sync again
+        await this.sync.sync({});
+
+        const newTasks = await this.habitica.listTasks();
+        expect(newTasks.length).to.equal(originalTasks.length);
     });
 
     // Pending tests: 

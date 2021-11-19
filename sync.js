@@ -233,7 +233,7 @@ module.exports = class Sync {
                 .map(todoistItem => {
                     const parentTask = this.findRootTask(todoistItem);
                     const taskId = parentTask.id;
-                    const habiticaTask = config.habiticaTasks.find(i => i.alias == parentTask.id);
+                    const habiticaTask = config.habiticaTasks.find(i => i && i.alias == parentTask.id);
                     if (!habiticaTask) {
                         this.logger.warn("Could not find a habitica task for todoist item", parentTask.id);
                         return;

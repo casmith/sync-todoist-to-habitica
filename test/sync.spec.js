@@ -99,6 +99,22 @@ describe('sync', function () {
         expect(newTasks).to.have.lengthOf(originalTasks.length + 1);
     });
 
+    it('scores a task when it is completed', async function () {
+        sinon.stub(this.todoist, 'getStats').returns(Promise.resolve(statsFor(6, 0)));
+        const tasks = {items: [{id: uuidv4(), checked: false, content: "My task"}]};
+        sinon.stub(this.todoist, 'sync').returns(Promise.resolve(tasks))
+        sinon.stub(this.todoist, 'listTasks').returns(Promise.resolve(tasks.items));
+        
+        const originalTasks = await this.habitica.listTasks();
+        await this.sync.sync({})
+
+        tasks.items[0].checked = true;
+        await this.sync.sync({})
+
+        const newTasks = await this.habitica.listTasks();
+        const completedTasks = newTasks.filter(t => t.checked);
+        expect(completedTasks).to.have.lengthOf(1);
+    });
     it('scores the daily task in habitica when the todooist daily goal is reached', async function () {
         sinon.stub(this.todoist, 'getStats').returns(Promise.resolve(statsFor(6, 6)));
         const tasks = {items: [{id: uuidv4(), checked: false, content: "My task"}]};

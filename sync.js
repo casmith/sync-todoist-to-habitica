@@ -283,10 +283,6 @@ module.exports = class Sync {
         return `[${todoistTask.id}] ${todoistTask.content}`;
     }
 
-    findHabiticaTask(taskId) {
-        return this.config.habiticaTasks.find(i => i.alias = taskId);
-    }
-
     updateTask(todoistTask) {
         this.logger.info('Updating habatica task', todoistTask.id, todoistTask.content);
         if (todoistTask.parent !== null) {

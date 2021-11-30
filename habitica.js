@@ -38,12 +38,12 @@ module.exports = class Habitica {
     }
 
     updateTask (task) {
-        return this.axios.put(`/tasks/${task.alias}}`, task);
+        return this.axios.put(`/tasks/${task.alias}`, task);
     }
 
     deleteTask (taskId) {
         return this.axios.delete(`/tasks/${taskId}`).catch(err => {
-            if (err.statusCode === 404) {
+            if (err.response.status === 404) {
                 this.logger.warn('Deleting task that no longer exists', taskId);
             } else {
                 return Promise.reject(err);
@@ -67,9 +67,6 @@ module.exports = class Habitica {
 
     listDailies() {
         return this.listTasks('dailys');
-    }
-
-    userCast () {
     }
 
     scoreTask (taskId) {

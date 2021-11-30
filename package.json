@@ -10,11 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.24.0",
     "jsonfile": "^6.1.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
-    "request": "^2.83.0",
-    "request-promise": "^4.2.2",
     "uuid": "^8.3.2",
     "winston": "^3.3.3"
   },

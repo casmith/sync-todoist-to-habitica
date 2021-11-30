@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require('request-promise');
+const axios = require('axios');
 
 module.exports = class {
 
@@ -12,35 +12,35 @@ module.exports = class {
             ['x-api-user']: this.apiUser,
             ['x-api-key']: this.apiKey
         };
-        this.request = request.defaults({headers});
+        const baseURL = "https://habitica.com/api/v3/";
+        this.axios = axios.create({headers, baseURL});
     }
 
     post(url, form) {
-        return this.request.post({url, form, json: true})
+        this.logger.info("Posting with axios");
+        return this.axios.post(url, form)
             .then(res => res.data);
     }
 
+    get(url) {
+        this.logger.info("using axios");
+        return this.axios.get(url).then(response => response.data);
+    }
+
     createTask (task) {
-        return this.post(`https://habitica.com/api/v3/tasks/user`, task);
+        return this.post(`/tasks/user`, task);
     }
 
     getTask(taskId) {
-        return this.request.get({
-            url: `https://habitica.com/api/v3/tasks/${taskId}`
-        });
+        return this.get(`/tasks/${taskId}`);
     }
 
     updateTask (task) {
-        return this.request.put({
-            url: `https://habitica.com/api/v3/tasks/${task.alias}`,
-            form: task
-        });
+        return this.axios.put(`/tasks/${task.alias}}`, task);
     }
 
     deleteTask (taskId) {
-        return this.request.delete({
-            url: 'https://habitica.com/api/v3/tasks/' + taskId,
-        }).catch(err => {
+        return this.axios.delete(`/tasks/${taskId}`).catch(err => {
             if (err.statusCode === 404) {
                 this.logger.warn('Deleting task that no longer exists', taskId);
             } else {
@@ -62,10 +62,8 @@ module.exports = class {
         if (!type) {
             type = 'todos';
         }
-        return this.request.get({
-            url: 'https://habitica.com/api/v3/tasks/user' + (type ? `?type=${type}` : '')
-        })
-        .then(response => JSON.parse(response).data);
+        return this.get('/tasks/user' + (type ? `?type=${type}` : ''))
+            .then(response => response.data);
     }
 
     listDailies() {
@@ -76,34 +74,23 @@ module.exports = class {
     }
 
     scoreTask (taskId) {
-        return this.request.post({
-            url: `https://habitica.com/api/v3/tasks/${taskId}/score/up`
-        });
+        return this.post(`/tasks/${taskId}/score/up`);
     }
 
     createChecklistItem(taskId, text) {
-        return this.request.post({
-            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist`,
-            form: {text}
-        });
+        return this.post(`/tasks/${taskId}/checklist`, text);
     }
 
     updateChecklistItem(taskId, itemId, text) {
-        return this.request.put({
-            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}`,
-            form: {text}
-        });
+        return this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {text});
     }
 
     deleteChecklistItem(taskId, itemId) {
-        return this.request.delete({
-            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}`
-        });
+        return this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
     }
 
     scoreChecklistItem(taskId, itemId) {
-        return this.request.post({
-            url: `https://habitica.com/api/v3/tasks/${taskId}/checklist/${itemId}/score`
-        }).catch(e => Promise.reject("failed to score up a task"));
+        return this.post(`/tasks/${taskId}/checklist/${itemId}/score`)
+            .catch(e => Promise.reject("failed to score up a task"));
     }
 }

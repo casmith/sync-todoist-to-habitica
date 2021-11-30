@@ -200,7 +200,8 @@ module.exports = class Sync {
 
     deleteTask(task) {
         this.logger.info('Deleting habitica task', task.content, task.id);
-        return this.habitica.deleteTask(task.id);
+        return this.habitica.deleteTask(task.id)
+            .catch(e => console.warn(`Task ${task.id} wasn't deleted because it doesn't exist`));
     }
 
     filterIgnoredProjects (config) {

@@ -1,8 +1,8 @@
 'use strict';
 
 const _ = require('lodash');
-const request = require('request-promise');
 const baseUrl = 'https://api.todoist.com/rest/v1';
+const axios = require('axios');
 
 const REPEAT_WEEKDAYS = {
     su: false,
@@ -18,26 +18,22 @@ module.exports = class {
 
     constructor(apiToken, logger) {
         this.apiToken = apiToken;
-        this.request = request.defaults({
-            headers: {
-                'Authorization': 'Bearer ' + this.apiToken
-            }
-        });
+
+        const baseURL = baseUrl;
+        const headers = {
+            'Authorization': 'Bearer ' + this.apiToken
+        };
+
+        this.axios = axios.create({baseURL, headers});
         this.logger = logger;
     }
 
     createTask(item) {
-        return this.request.post({
-            url: `${baseUrl}/tasks`, 
-            body: JSON.stringify(item),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        return this.axios.post('/tasks', item);
     }
 
     deleteTask(id) {
-        return this.request.delete(`${baseUrl}/tasks/${id}`);
+        return this.axios.delete(`${baseUrl}/tasks/${id}`);
     }
 
     deleteAllTasks() {
@@ -45,13 +41,13 @@ module.exports = class {
     }
 
     getStats() {
-        return this.request.get('https://api.todoist.com/sync/v8/completed/get_stats')
-            .then(r => JSON.parse(r));
+        return this.axios.get('https://api.todoist.com/sync/v8/completed/get_stats')
+            .then(r => r.data);
     }
 
     getTask(taskId) {
-        return this.request.get(`${baseUrl}/tasks/${taskId}`)
-            .then(r => JSON.parse(r)); 
+        return this.axios.get(`${baseUrl}/tasks/${taskId}`)
+            .then(r => r.data);
     }
 
     isTaskRecurring(task) {
@@ -59,26 +55,24 @@ module.exports = class {
     }
 
     listProjects() {
-        return this.request.get(`${baseUrl}/projects`)
-            .then(r => JSON.parse(r));
+        return this.axios.get(`${baseUrl}/projects`)
+            .then(r => r.data);
     }
 
 
     listTasks() {
-        return this.request.get(`${baseUrl}/tasks`)
+        return this.axios.get(`${baseUrl}/tasks`)
             .then(r => {
                 this.logger.info("Done fetching all todoist tasks");
-                return JSON.parse(r)
+                return r.data;
             });
     }
 
     sync(token) {
         const url = 'https://api.todoist.com/sync/v8/sync?resource_types=["all"]&sync_token=' + token;
         this.logger.info('Sync Token:', token);
-        return this.request.get({
-                url: url
-            })
-            .then(r => JSON.parse(r));
+        return this.axios.get(url)
+            .then(r => r.data);
     }
 
     calculateFrequency(dateExpr) {

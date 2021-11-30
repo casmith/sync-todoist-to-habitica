@@ -16,7 +16,7 @@ const Todoist = require('./todoist');
 const Sync = require('./sync');
 
 const todoist = new Todoist(config.todoist.token, logger);
-const habitica = new Habitica(config.habitica.apiUser, config.habitica.apiKey, logger);
+const habitica = Habitica.from(config.habitica.apiUser, config.habitica.apiKey, logger);
 const lastRun = jsonFile.readFileSync(configDir + 'lastRun.json', {throws: false}) || {};
 
 logger.info("Sync started");

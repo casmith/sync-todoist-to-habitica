@@ -173,7 +173,7 @@ module.exports = class Sync {
                 const today = moment(stats['days_items'][0].date);
                 const lastDailyGoal = lastRun.lastDailyGoal;
                 const completed = stats['days_items'][0].total_completed;
-                this.logger.info('Daily goal:', goal, ' Completed:', completed);
+                this.logger.info('Daily goal: [' + goal + '] Completed: [' + completed + ']');
                 if (completed >= goal && (!lastDailyGoal || today.isAfter(lastRun.lastDailyGoal, 'd'))) {
                     return this.scoreDailyGoalTask(config, today);
                 }

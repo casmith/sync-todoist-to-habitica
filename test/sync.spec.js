@@ -46,7 +46,7 @@ class FakeHabitica {
             if (task) task.checked = true;
         });
     }
-    deleteTask(id) {
+    async deleteTask(id) {
         const idx = this.tasks.findIndex(t => t._id === id || t.alias === id);
         this.tasks.splice(idx, idx >= 0 ? 1 : 0);
     }
@@ -71,7 +71,7 @@ function statsFor(goal, completed) {
 describe('sync', function () {
     beforeEach(function () {
         const Todoist = require('../todoist');
-        this.logger = console;//new LoggerStub();
+        this.logger = new LoggerStub();
         this.habitica = new FakeHabitica();
         const Sync = require('../sync');
         const config = require('../config');
@@ -180,7 +180,7 @@ describe('sync', function () {
         tasks.items = [{id: uuidv4(), content: "My subtask"}];
         await this.sync.sync({});
 
-        console.log(await this.habitica.listTasks());
+        await this.habitica.listTasks();
 
         // now add the parent_id to the task and sync again
         tasks.items[0].parent_id = parentId;
@@ -189,7 +189,6 @@ describe('sync', function () {
         // verify
         const newTasks = await this.habitica.listTasks();
         expect(newTasks[0].checklist.length).to.equal(1);
-        console.log(newTasks);
     });
     // Pending tests: 
 

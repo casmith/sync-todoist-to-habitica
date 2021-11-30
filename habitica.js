@@ -2,29 +2,31 @@
 
 const axios = require('axios');
 
-module.exports = class {
+module.exports = class Habitica {
 
-    constructor (apiUser, apiKey, logger) {
-        this.apiUser = apiUser;
-        this.apiKey = apiKey;
+    constructor (myAxios, logger = console) {
 	    this.logger = logger;
+        this.axios = myAxios;
+    }
+    
+    static from(apiUser, apiKey, logger = console) {
         const headers = {
-            ['x-api-user']: this.apiUser,
-            ['x-api-key']: this.apiKey
+            ['x-api-user']: apiUser,
+            ['x-api-key']: apiKey
         };
         const baseURL = "https://habitica.com/api/v3/";
-        this.axios = axios.create({headers, baseURL});
+        const newAxios = axios.create({headers, baseURL});
+        return new Habitica(newAxios, logger);
     }
 
     post(url, form) {
-        this.logger.info("Posting with axios");
         return this.axios.post(url, form)
             .then(res => res.data);
     }
 
     get(url) {
-        this.logger.info("using axios");
-        return this.axios.get(url).then(response => response.data);
+        return this.axios.get(url)
+            .then(response => response.data);
     }
 
     createTask (task) {
@@ -58,10 +60,7 @@ module.exports = class {
         return Promise.all(taskIds.map(taskId => this.deleteTask(taskId)));
     }
 
-    listTasks(type) {
-        if (!type) {
-            type = 'todos';
-        }
+    listTasks(type = 'todos') {
         return this.get('/tasks/user' + (type ? `?type=${type}` : ''))
             .then(response => response.data);
     }

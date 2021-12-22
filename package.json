@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "nyc --reporter=text --reporter=html  mocha --timeout 10000",
+    "test": "nyc --reporter=text --reporter=lcovonly  mocha --timeout 10000",
     "test:watch": "mocha --timeout 10000 --watch --growl"
   },
   "author": "",

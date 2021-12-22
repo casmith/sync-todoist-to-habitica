@@ -1,6 +1,6 @@
 # todoist-habitica-sync
 
-[![CircleCI](https://circleci.com/gh/casmith/todoist-habitica-sync.svg?style=svg)](https://circleci.com/gh/casmith/todoist-habitica-sync)
+[![codecov](https://codecov.io/gh/casmith/sync-todoist-to-habitica/branch/master/graph/badge.svg?token=ODO5BC1ZEP)](https://codecov.io/gh/casmith/sync-todoist-to-habitica)
 
 A utility for syncing todoist tasks to habitica. 
 

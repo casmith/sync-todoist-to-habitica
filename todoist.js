@@ -16,16 +16,17 @@ const REPEAT_WEEKDAYS = {
 
 module.exports = class {
 
-    constructor(apiToken, logger) {
-        this.apiToken = apiToken;
-
-        const baseURL = baseUrl;
-        const headers = {
-            'Authorization': 'Bearer ' + this.apiToken
-        };
-
-        this.axios = axios.create({baseURL, headers});
+    constructor(myAxios, logger) {
+        this.axios = myAxios;
         this.logger = logger;
+    }
+
+    static from(apiToken, logger = console) {
+        const headers = {
+            'Authorization': 'Bearer ' + apiToken
+        };
+        const baseURL = "https://api.todoist.com";
+        return new Todoist(axios.create({baseURL: baseUrl, headers}), logger);
     }
 
     createTask(item) {

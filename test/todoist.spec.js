@@ -2,16 +2,49 @@
 
 const expect = require('chai').expect;
 const LoggerStub = require('./loggerStub');
+const axios = require('axios');
+const MockAdapter = require("axios-mock-adapter");
 
 describe('todoist', function () {
-	before(function () {
-        const config = require('../config');
+    beforeEach(function () {
+	console.log('beforeEach');
         const Todoist = require('../todoist');
-        const logger = new LoggerStub();
-        this.todoist = new Todoist(config.todoist.token, logger);
+        this.axios = new MockAdapter(axios);	
+        this.todoist = new Todoist(this.axios.axiosInstance);
+        const config = require('../config');
     });
-	describe('#calculateFrequency()', function () {
-        it('is given "every day"', function () {
+
+    describe('createTask()', function () {
+	it('should call the todoist api to create a task', function () {
+	    this.axios.onPost('/tasks').reply(200, {
+		"comment_count": 0,
+		"completed": false,
+		"content": "Buy Milk",
+		"description": "",
+		"due": {
+		    "date": "2016-09-01",
+		    "datetime": "2016-09-01T11:00:00Z",
+		    "recurring": false,
+		    "string": "2017-07-01 12:00",
+		    "timezone": "Europe/Lisbon"
+		},
+		"id": 2995104339,
+		"order": 1,
+		"priority": 4,
+		"project_id": 2203306141,
+		"section_id": 7025,
+		"parent_id": 2995104589,
+		"url": "https://todoist.com/showTask?id=2995104339"
+	    });
+	    const item = {"content": "Buy Milk", "due_string": "tomorrow at 12:00", "due_lang": "en", "priority": 4};
+	    return this.todoist.createTask(item).then(response => {
+		expect(response.data.content).to.equal('Buy Milk');
+	    });
+	});
+    });
+
+    describe('#calculateFrequency()', function () {
+	it('is given "every day"', function () {
             expect(this.todoist.calculateFrequency('every day')).to.deep.equal({
                 frequency: 'daily'
             });

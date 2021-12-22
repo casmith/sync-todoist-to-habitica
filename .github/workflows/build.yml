@@ -28,7 +28,10 @@ jobs:
     - run: cp config.json.example config.json
     - run: npm ci
     - run: npm test
-
+    - uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
     - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v1

@@ -14,7 +14,7 @@ const REPEAT_WEEKDAYS = {
     s: false
 };
 
-module.exports = class {
+module.exports = class Todoist {
 
     constructor(myAxios, logger) {
         this.axios = myAxios;

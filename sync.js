@@ -194,12 +194,12 @@ module.exports = class Sync {
     }
 
     createTask(todoistTask) {
-        this.logger.info('Creating new habitica task', todoistTask.content);
+        this.logger.info('Creating new habitica task', JSON.stringify(todoistTask));
         return this.habitica.createTask(this.createHabiticaTask(todoistTask));
     }
 
     deleteTask(task) {
-        this.logger.info('Deleting habitica task', task.content, task.id);
+        this.logger.info('Deleting habitica task', JSON.stringify(task));
         return this.habitica.deleteTask(task.id)
             .catch(e => console.warn(`Task ${task.id} wasn't deleted because it doesn't exist`));
     }

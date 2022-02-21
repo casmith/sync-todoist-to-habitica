@@ -1,6 +1,7 @@
 'use strict';
 
 const axios = require('axios');
+const util = require('util');
 
 module.exports = class Habitica {
 
@@ -19,14 +20,35 @@ module.exports = class Habitica {
         return new Habitica(newAxios, logger);
     }
 
-    post(url, form) {
-        return this.axios.post(url, form)
-            .then(res => res.data);
+    async sleep(ms) {
+      return new Promise(res => {
+        setTimeout(res, ms)
+      }) 
     }
 
-    get(url) {
-        return this.axios.get(url)
-            .then(response => response.data);
+    async post(url, form) {
+      await this.sleep(2000);
+      const res = await this.axios.post(url, form)
+      return res.data.data;
+    }
+
+    async get(url) {
+      await this.sleep(2000);
+      const res = await this.axios.get(url);
+
+      return res.data.data;
+    }
+
+    async put(url, form) {
+      await this.sleep(2000);
+      const res = await this.axios.put(url, form);
+      return res.data.data;
+    }
+
+    async delete(url) {
+      await this.sleep(2000);
+      const res = await this.axios.delete(url);
+      return res.data.data;
     }
 
     createTask (task) {
@@ -38,11 +60,11 @@ module.exports = class Habitica {
     }
 
     updateTask (task) {
-        return this.axios.put(`/tasks/${task.alias}`, task);
+        return this.put(`/tasks/${task.alias}`, task);
     }
 
     deleteTask (taskId) {
-        return this.axios.delete(`/tasks/${taskId}`).catch(err => {
+        return this.delete(`/tasks/${taskId}`).catch(err => {
             if (err.response.status === 404) {
                 this.logger.warn('Deleting task that no longer exists', taskId);
             } else {
@@ -62,7 +84,6 @@ module.exports = class Habitica {
 
     listTasks(type = 'todos') {
         return this.get('/tasks/user' + (type ? `?type=${type}` : ''))
-            .then(response => response.data);
     }
 
     listDailies() {
@@ -78,11 +99,11 @@ module.exports = class Habitica {
     }
 
     updateChecklistItem(taskId, itemId, text) {
-        return this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {text});
+        return this.put(`/tasks/${taskId}/checklist/${itemId}`, {text});
     }
 
     deleteChecklistItem(taskId, itemId) {
-        return this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
+        return this.delete(`/tasks/${taskId}/checklist/${itemId}`);
     }
 
     scoreChecklistItem(taskId, itemId) {

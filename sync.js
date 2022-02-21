@@ -2,7 +2,8 @@
 
 const _ = require('lodash'),
     moment = require('moment'),
-    jsonFile = require('jsonfile');
+    jsonFile = require('jsonfile')
+    util = require('util');
 
 module.exports = class Sync {
     constructor (todoist, habitica, logger, config) {
@@ -48,6 +49,7 @@ module.exports = class Sync {
             })
             .then(() => {
                 return this.habitica.listDailies().then(dailies => {
+                  console.log("listed dailies" + JSON.stringify(dailies));
                     config.habiticaDailies = dailies;
                     this.logger.info("Finished loading habitica tasks");
                 });
@@ -84,16 +86,22 @@ module.exports = class Sync {
             });
     }
 
-    scoreCompletedTasks(config) {
+    async scoreCompletedTasks(config) {
         const sync = config.sync;
-        return Promise.all(sync.items
-                .filter(item => !item.parent_id)
-                .filter(item => item.checked)
-                .map(item => {
-                    this.logger.info('Scoring task', item.id, item.content);
-                    return this.habitica.scoreTask(item.id).catch(e => console.warn('Failed to score a task', e));
-                }))
-            .then(() => config.append('items', sync.items.filter(item => !item.checked)));
+        const syncItems = sync.items
+            .filter(item => !item.parent_id)
+            .filter(item => item.checked)
+
+        const sleep = ms =>
+          new Promise(res => {
+           setTimeout(res, ms)
+          }) 
+        for (let item of syncItems) {
+          await sleep(2000);
+          this.logger.info(`Scoring task ${item.content}`);
+          await this.habitica.scoreTask(item.id).catch(e => console.warn('Failed to score a task:', e.response.data.message));
+        }
+        return Promise.resolve(config.append('items', sync.items.filter(item => !item.checked)));
     }
 
     updateDailies(config) {
@@ -107,6 +115,7 @@ module.exports = class Sync {
                     // unless it was simply created with a future due date
                     const dueDate = _.get(item, 'due.date');
                     if (dueDate && moment(dueDate).isAfter(moment())) {
+                      //console.log(JSON.stringify(config));
                         // try to find a matching "daily" in habitica and score it
                         const task = config.habiticaDailies.find(i => i.text.toLowerCase().trim() === item.content.toLowerCase().trim());
                         if (task) {

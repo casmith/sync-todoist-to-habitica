@@ -5,7 +5,7 @@ const axios = require('axios');
 module.exports = class Habitica {
 
     constructor (myAxios, logger = console) {
-	    this.logger = logger;
+        this.logger = logger;
         this.axios = myAxios;
     }
     
@@ -19,12 +19,18 @@ module.exports = class Habitica {
         return new Habitica(newAxios, logger);
     }
 
+    async sleep(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	}
+
     async post(url, form) {
+		await this.sleep(2000);
         const res = await this.axios.post(url, form)
         return res.data;
     }
 
     async get(url) {
+		await this.sleep(2000);
         const response = await this.axios.get(url)
         return response.data; 
     }
@@ -43,6 +49,7 @@ module.exports = class Habitica {
 
     async deleteTask (taskId) {
 	try {
+		await this.sleep(2000);
 	    return await this.axios.delete(`/tasks/${taskId}`)
 	} catch (err) {
             if (err.response.status === 404) {
@@ -82,17 +89,19 @@ module.exports = class Habitica {
     }
 
     async updateChecklistItem(taskId, itemId, text) {
+		await this.sleep(2000);
         return await this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {text});
     }
 
     async deleteChecklistItem(taskId, itemId) {
+		await this.sleep(2000);
         return await this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
     }
 
     async scoreChecklistItem(taskId, itemId) {
         try {
-	    await this.post(`/tasks/${taskId}/checklist/${itemId}/score`);
-	} catch (e) {
+			await this.post(`/tasks/${taskId}/checklist/${itemId}/score`);
+		} catch (e) {
             throw new Error("failed to score up a task");
         }
     }

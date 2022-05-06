@@ -40,6 +40,7 @@ module.exports = class Sync {
         this.logger.info('Getting habitica tasks');
         return this.habitica.listTasks()
             .then(tasks => {
+                this.logger.info("Loaded tasks");
                 config.habiticaTasks = tasks;
                 config.aliases = _.reduce(tasks, (acc, task) => {
                     acc[task.alias] = task._id;
@@ -48,11 +49,20 @@ module.exports = class Sync {
             })
             .then(() => {
                 return this.habitica.listDailies().then(dailies => {
+                    this.logger.info("Loaded dailies");
                     config.habiticaDailies = dailies;
-                    this.logger.info("Finished loading habitica tasks");
                 });
             })
-            .then(() => config)
+            .then(() => {
+                return this.habitica.listTasks('habits').then(habits => {
+                    this.logger.info("Loaded habits");
+                    config.habiticaHabits = habits;
+                });
+            })
+            .then(() => {
+                this.logger.info("Finished loading habitica tasks");
+                return config
+            })
     }
 
     getProjects(config) {
@@ -116,6 +126,11 @@ module.exports = class Sync {
                         if (task) {
                             this.logger.info('Scoring daily task', task.text);
                             return this.habitica.scoreTask(task._id).catch(e => console.warn("Failed to score a task: " + item.content));
+                        } else if (config.todoist.unmatchedDailyTask) {
+                            return this.scoreTaskByName(config, config.todoist.unmatchedDailyTask)
+                                .catch(e => {
+                                  this.logger.error("Failed to score unmatched daily task:" + e);
+                                });
                         } else {
                             this.logger.warn(`Recurring task completed but no daily could be found in habitica called [${item.content}]`)
                         }
@@ -272,15 +287,25 @@ module.exports = class Sync {
 
     scoreDailyGoalTask(config, today) {
         // TODO: make this configurable
-        const dailyGoalTask = config.habiticaDailies.find(t => t.text === 'Todoist: Daily Goal');
-        if (dailyGoalTask) {
-            this.logger.info('Daily goal reached! Scoring "Todoist: Daily Goal"', dailyGoalTask._id);
+        const taskName = 'Todoist: Daily Goal';
+        return this.scoreTaskByName(config, taskName)
+          .then(task => {
+            this.logger.info(`Daily goal reached! Scored ${taskName}`, task._id);
             config.lastRun.lastDailyGoal = today;
-            return this.habitica.scoreTask(dailyGoalTask._id);
-        } else {
-            this.logger.info('"Todoist: Daily Goal" task not configured');
-        }
+          })
+          .catch(e => this.logger.info(e));
     }
+
+  scoreTaskByName(config, taskName) {
+    const task = config.habiticaDailies.find(t => t.text === taskName) || 
+      config.habiticaHabits.find(t => t.text === taskName);
+    if (task) {
+      return this.habitica.scoreTask(task._id)
+        .then(ignored => task);
+    } else {
+      return Promise.reject(`${taskName} not found`);
+    }
+  }
 
     /**
      * Generates the checklist item text for habitica from a todoist task

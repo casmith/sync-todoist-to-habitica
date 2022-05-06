@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 module.exports = class LoggerStub {
-    warn() {}
-    info() {}
-    error() {}
+  warn() {}
+  info() {}
+  error() {}
 };

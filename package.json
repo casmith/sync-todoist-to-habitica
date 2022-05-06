@@ -5,15 +5,19 @@
   "main": "index.js",
   "scripts": {
     "test": "nyc --reporter=text --reporter=lcovonly  mocha --timeout 10000",
-    "test:watch": "mocha --timeout 10000 --watch --growl"
+    "test:watch": "mocha --timeout 10000 --watch --growl",
+    "prepare": "husky install"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.24.0",
+    "husky": "^7.0.4",
     "jsonfile": "^6.1.0",
+    "lint-staged": "^12.4.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.2",
+    "prettier": "^2.6.2",
     "uuid": "^8.3.2",
     "winston": "^3.3.3"
   },
@@ -23,5 +27,8 @@
     "mocha": "^9.1.3",
     "nyc": "^15.1.0",
     "sinon": "^12.0.1"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }

@@ -2,15 +2,15 @@
 
 [![codecov](https://codecov.io/gh/casmith/sync-todoist-to-habitica/branch/master/graph/badge.svg?token=ODO5BC1ZEP)](https://codecov.io/gh/casmith/sync-todoist-to-habitica)
 
-A utility for syncing todoist tasks to habitica. 
+A utility for syncing todoist tasks to habitica.
 
 This is not created by, affiliated with, or supported by Doist.
 
 ## Requirements
 
-* A modern node.js version (tested with 10.x, 11.x)
-* A todoist account
-* A habitica account
+- A modern node.js version (tested with 10.x, 11.x)
+- A todoist account
+- A habitica account
 
 ## Usage
 
@@ -22,7 +22,7 @@ $ cp config.json.example config.json # edit config.json with your favorite edito
 $ node index.js
 ```
 
-That's it! You can configure it to run on a schedule with something like crontab. 
+That's it! You can configure it to run on a schedule with something like crontab.
 
 ## License
 

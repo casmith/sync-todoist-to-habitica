@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-const sinon = require('sinon');
+const sinon = require("sinon");
 
-beforeEach(function() {
+beforeEach(function () {
   if (null == this.sinon) {
     this.sinon = sinon.createSandbox();
   } else {
@@ -10,7 +10,6 @@ beforeEach(function() {
   }
 });
 
-require('./habitica.spec.js');
-require('./todoist.spec.js');
-require('./sync.spec.js');
-
+require("./habitica.spec.js");
+require("./todoist.spec.js");
+require("./sync.spec.js");

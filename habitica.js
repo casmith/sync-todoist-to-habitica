@@ -86,7 +86,10 @@ module.exports = class Habitica {
   }
 
   async createChecklistItem(taskId, text) {
-    return await this.post(`/tasks/${taskId}/checklist`, text);
+    this.logger.info(
+      `Creating checklist item on task ${taskId} with content ${text}`
+    );
+    return await this.post(`/tasks/${taskId}/checklist`, { text });
   }
 
   async updateChecklistItem(taskId, itemId, text) {

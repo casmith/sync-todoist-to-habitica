@@ -44,7 +44,7 @@ module.exports = class Todoist {
 
   getStats() {
     return this.axios
-      .get("https://api.todoist.com/sync/v8/completed/get_stats")
+      .get("https://api.todoist.com/sync/v9/completed/get_stats")
       .then((r) => r.data);
   }
 
@@ -69,7 +69,7 @@ module.exports = class Todoist {
 
   sync(token) {
     const url =
-      'https://api.todoist.com/sync/v8/sync?resource_types=["all"]&sync_token=' +
+      'https://api.todoist.com/sync/v9/sync?resource_types=["all"]&sync_token=' +
       token;
     this.logger.info("Sync Token:", token);
     return this.axios.get(url).then((r) => r.data);

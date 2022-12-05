@@ -1,7 +1,7 @@
 "use strict";
 
 const _ = require("lodash");
-const baseUrl = "https://api.todoist.com/rest/v1";
+const baseUrl = "https://api.todoist.com/rest/v2";
 const axios = require("axios");
 
 const REPEAT_WEEKDAYS = {

@@ -21,8 +21,14 @@ const habitica = Habitica.from(
   config.habitica.apiKey,
   logger
 );
+
+const initialSyncToken = process.env.INITIAL_SYNC_TOKEN;
 const lastRun =
   jsonFile.readFileSync(configDir + "lastRun.json", { throws: false }) || {};
+if (!lastRun.syncToken && !!initialSyncToken) {
+  logger.info(`Using initial sync token: ${initialSyncToken}`);
+  lastRun.syncToken = initialSyncToken;
+}
 
 logger.info("Sync started");
 new Sync(todoist, habitica, logger, config)

@@ -54,6 +54,8 @@ const lastRun =
 if (!lastRun.syncToken && !!initialSyncToken) {
   logger.info(`Using initial sync token: ${initialSyncToken}`);
   lastRun.syncToken = initialSyncToken;
+} else {
+  logger.info(`Using sync token ${lastRun.syncToken}`);
 }
 
 logger.info("Sync started");

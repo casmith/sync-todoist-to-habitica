@@ -36,7 +36,9 @@ new Sync(todoist, habitica, logger, config)
   .then((config) => {
     const sync = config.sync;
     lastRun.syncToken = sync.sync_token;
-    logger.info("Sync finished, writing lastRun.json", lastRun);
+    logger.info(
+      `Sync finished, writing lastRun.json with new syncToken: ${lastRun.syncToken}`
+    );
     jsonFile.writeFileSync(configDir + "lastRun.json", lastRun);
   })
   .then(() => logger.info("done"));

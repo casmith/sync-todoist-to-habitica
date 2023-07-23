@@ -51,6 +51,9 @@ const habitica = Habitica.from(
 const initialSyncToken = process.env.INITIAL_SYNC_TOKEN;
 const lastRun =
   jsonFile.readFileSync(configDir + "lastRun.json", { throws: false }) || {};
+
+logger.info("Last run: " + JSON.stringify(lastRun));
+
 if (!lastRun.syncToken && !!initialSyncToken) {
   logger.info(`Using initial sync token: ${initialSyncToken}`);
   lastRun.syncToken = initialSyncToken;

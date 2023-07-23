@@ -8,9 +8,28 @@ const resolveConfigDir = () => {
   return configDir.endsWith("/") ? configDir : configDir + "/";
 };
 const configDir = resolveConfigDir();
+const logger = require("./logger")(configDir);
 
 const config = require(configDir + "config.json");
-const logger = require("./logger")(configDir);
+
+// apply configuration from environment vars
+const habiticaApiUser = process.env.HABITICA_API_USER;
+const habiticaApiKey = process.env.HABITICA_API_KEY;
+const todoistApiToken = process.env.TODOIST_API_TOKEN;
+if (!!habiticaApiUser && !!habiticaApiKey && !!todoistApiToken) {
+  logger.info("Applying configuration from environment variables");
+  config = {
+    habitica: {
+      apiUser: habiticaApiUser,
+      apiKey: habiticaApiKey,
+    },
+    todoist: {
+      token: todoistApiToken,
+    },
+    ignoreProjects: [],
+  };
+}
+
 const Habitica = require("./habitica");
 const Todoist = require("./todoist");
 const Sync = require("./sync");

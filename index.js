@@ -1,7 +1,8 @@
 "use strict";
 
-const _ = require("lodash");
-const jsonFile = require("jsonfile");
+const _ = require("lodash"),
+  jsonFile = require("jsonfile"),
+  fs = require("fs");
 
 const resolveConfigDir = () => {
   const configDir = process.env.CONFIG_DIR || "./";
@@ -10,24 +11,30 @@ const resolveConfigDir = () => {
 const configDir = resolveConfigDir();
 const logger = require("./logger")(configDir);
 
-const config = require(configDir + "config.json");
-
-// apply configuration from environment vars
-const habiticaApiUser = process.env.HABITICA_API_USER;
-const habiticaApiKey = process.env.HABITICA_API_KEY;
-const todoistApiToken = process.env.TODOIST_API_TOKEN;
-if (!!habiticaApiUser && !!habiticaApiKey && !!todoistApiToken) {
-  logger.info("Applying configuration from environment variables");
-  config = {
-    habitica: {
-      apiUser: habiticaApiUser,
-      apiKey: habiticaApiKey,
-    },
-    todoist: {
-      token: todoistApiToken,
-    },
-    ignoreProjects: [],
-  };
+const configFile = configDir + "config.json";
+let config;
+if (fs.existsSync(configFile)) {
+  config = require(configFile);
+} else {
+  // apply configuration from environment vars
+  const habiticaApiUser = process.env.HABITICA_API_USER;
+  const habiticaApiKey = process.env.HABITICA_API_KEY;
+  const todoistApiToken = process.env.TODOIST_API_TOKEN;
+  if (!!habiticaApiUser && !!habiticaApiKey && !!todoistApiToken) {
+    logger.info("Applying configuration from environment variables");
+    config = {
+      habitica: {
+        apiUser: habiticaApiUser,
+        apiKey: habiticaApiKey,
+      },
+      todoist: {
+        token: todoistApiToken,
+      },
+      ignoreProjects: [],
+    };
+  } else {
+    logger.error("No config found!");
+  }
 }
 
 const Habitica = require("./habitica");

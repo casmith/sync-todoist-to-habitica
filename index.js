@@ -61,6 +61,8 @@ if (!lastRun.syncToken && !!initialSyncToken) {
   logger.info(`Using sync token ${lastRun.syncToken}`);
 }
 
+logger.info("Last run (2): " + JSON.stringify(lastRun));
+
 logger.info("Sync started");
 new Sync(todoist, habitica, logger, config)
   .sync(lastRun)

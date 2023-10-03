@@ -3,9 +3,10 @@
 const axios = require("axios");
 
 module.exports = class Habitica {
-  constructor(myAxios, logger = console) {
+  constructor(myAxios, logger = console, sleepMs = 2000) {
     this.logger = logger;
     this.axios = myAxios;
+    this.sleepMs = sleepMs;
   }
 
   static from(apiUser, apiKey, logger = console) {
@@ -23,13 +24,13 @@ module.exports = class Habitica {
   }
 
   async post(url, form) {
-    await this.sleep(2000);
+    await this.sleep(this.sleepMs);
     const res = await this.axios.post(url, form);
     return res.data;
   }
 
   async get(url) {
-    await this.sleep(2000);
+    await this.sleep(this.sleepMs);
     const response = await this.axios.get(url);
     return response.data;
   }
@@ -48,7 +49,7 @@ module.exports = class Habitica {
 
   async deleteTask(taskId) {
     try {
-      await this.sleep(2000);
+      await this.sleep(this.sleepMs);
       return await this.axios.delete(`/tasks/${taskId}`);
     } catch (err) {
       if (err.response.status === 404) {
@@ -93,14 +94,14 @@ module.exports = class Habitica {
   }
 
   async updateChecklistItem(taskId, itemId, text) {
-    await this.sleep(2000);
+    await this.sleep(this.sleepMs);
     return await this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {
       text,
     });
   }
 
   async deleteChecklistItem(taskId, itemId) {
-    await this.sleep(2000);
+    await this.sleep(this.sleepMs);
     return await this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
   }
 

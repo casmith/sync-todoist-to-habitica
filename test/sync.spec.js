@@ -31,7 +31,7 @@ class FakeHabitica {
   createTask(task) {
     if (!task) throw new Error("empty task");
     const newTask = {
-      id: uuidv4(),
+      _id: uuidv4(),
       alias: task.alias,
       checklist: [],
       text: task.text,
@@ -39,21 +39,31 @@ class FakeHabitica {
     this.tasks.push(newTask);
     return Promise.resolve();
   }
+
   scoreTask(id) {
     return this.listTasks().then((tasks) => {
       const task = this.getTask(id);
       if (task) task.checked = true;
     });
   }
+
   async deleteTask(id) {
-    const idx = this.tasks.findIndex((t) => t._id === id || t.alias === id);
+    const idx = this.tasks.findIndex(
+      (t) => t._id === id || t.id === id || t.alias === id
+    );
     this.tasks.splice(idx, idx >= 0 ? 1 : 0);
   }
+
   getTask(id) {
     return []
       .concat(this.tasks)
       .concat(this.dailies)
       .find((t) => t._id === id || t.alias === id);
+  }
+
+  async updateTask(task) {
+    await this.deleteTask(task.id);
+    await this.createTask(task);
   }
 }
 
@@ -183,6 +193,7 @@ describe("sync", function () {
     tasks.items = [
       { id: uuidv4(), parent_id: tasks.items[0].id, content: "My subtask" },
     ];
+
     await this.sync.sync({});
 
     // verify
@@ -190,7 +201,7 @@ describe("sync", function () {
     expect(newTasks[0].checklist.length).to.equal(1);
   });
 
-  it("adds a todoist subtask as a checklist item in habitica", async function () {
+  it("convert an existing task to a subtask", async function () {
     sinon
       .stub(this.todoist, "getStats")
       .returns(Promise.resolve(statsFor(6, 0)));
@@ -199,8 +210,10 @@ describe("sync", function () {
     };
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
     sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+
     // initial sync, create the parent task
     await this.sync.sync({});
+    await this.habitica.listTasks();
 
     const parentId = tasks.items[0].id;
 
@@ -212,11 +225,34 @@ describe("sync", function () {
 
     // now add the parent_id to the task and sync again
     tasks.items[0].parent_id = parentId;
+
     await this.sync.sync({});
 
     // verify
     const newTasks = await this.habitica.listTasks();
     expect(newTasks[0].checklist.length).to.equal(1);
+    expect(newTasks.length).to.equal(2);
+  });
+
+  it("rename an existing task", async function () {
+    sinon
+      .stub(this.todoist, "getStats")
+      .returns(Promise.resolve(statsFor(6, 0)));
+    const tasks = {
+      items: [{ id: uuidv4(), checked: false, content: "My task" }],
+    };
+    sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    // initial sync, create the parent task
+    await this.sync.sync({});
+    const tasksBeforeRename = await this.habitica.listTasks();
+
+    tasks.items[0].content = "My renamed task";
+    await this.sync.sync({});
+
+    // verify
+    const newTasks = await this.habitica.listTasks();
+    expect(newTasks.find((t) => t.text === "My renamed task")).to.exist;
   });
   // Pending tests:
 
@@ -224,5 +260,5 @@ describe("sync", function () {
   // unscoring of checklist items
   // unscoring of a task
   // scoring daily/recurring tasks
-  // skipping projets
+  // skipping projects
 });

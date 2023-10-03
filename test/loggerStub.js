@@ -2,6 +2,6 @@
 
 module.exports = class LoggerStub {
   warn() {}
-  info() {}
+  info(msg) {}
   error() {}
 };

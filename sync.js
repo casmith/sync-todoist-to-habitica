@@ -19,6 +19,7 @@ module.exports = class Sync {
   }
 
   async sync(lastRun) {
+    this.logger.info("*** SYNC STARTED ***");
     this.config.append = function (key, obj) {
       this[key] = obj;
       return this;
@@ -169,6 +170,7 @@ module.exports = class Sync {
 
     let items = config.items
       .filter(isProjectAllowed)
+      .filter((t) => !t.parent_id)
       .filter((t) => !this.todoist.isTaskRecurring(t));
 
     for (const item of items) {
@@ -198,7 +200,7 @@ module.exports = class Sync {
       } else if (_.includes(aliases, item.id + "")) {
         await this.updateTask(item, config.aliases[item.id]);
       } else {
-        if (item.parent_id == null) {
+        if (!item.parent_id) {
           // don't create new tasks in habitica which are subtasks in todoist = those should be checklist items!
           try {
             const newItem = await this.createTask(item);
@@ -287,7 +289,7 @@ module.exports = class Sync {
 
   syncChecklistItems(config) {
     const checklistItems = config.sync.checklistItems || [];
-    const deletedItems = checklistItems.filter((i) => i.is_deleted);
+
     return Promise.all(
       checklistItems.map((todoistItem) => {
         const parentTask = this.findRootTask(todoistItem);
@@ -312,6 +314,7 @@ module.exports = class Sync {
           if (todoistItem.is_deleted) {
             return this.habitica.deleteChecklistItem(taskId, itemId);
           } else {
+            this.logger.info("Updating checklist item");
             return this.habitica
               .updateChecklistItem(taskId, itemId, content)
               .then(() => {
@@ -321,13 +324,34 @@ module.exports = class Sync {
               });
           }
         } else {
-          return (
-            todoistItem.is_deleted ||
-            this.habitica.createChecklistItem(taskId, content)
+          console.log("creating checklist item");
+
+          const staleTask = config.habiticaTasks.find(
+            (t) => t.alias == todoistItem.id
           );
+
+          // if the task exists, delete it
+          if (staleTask) {
+            // found a task that was converted to a checklist item, so we need to delete it
+            this.logger.info(
+              `Detected task that was converted to a subtask - deleting (${staleTask._id}).`
+            );
+            this.habitica
+              .deleteTask(staleTask._id)
+              .then(
+                () =>
+                  todoistItem.is_deleted ||
+                  this.habitica.createChecklistItem(taskId, content)
+              );
+          } else {
+            return (
+              todoistItem.is_deleted ||
+              this.habitica.createChecklistItem(taskId, content)
+            );
+          }
         }
       })
-    ).then(() => config);
+    );
   }
 
   scoreDailyGoalTask(config, today) {
@@ -362,8 +386,8 @@ module.exports = class Sync {
   }
 
   updateTask(todoistTask) {
-    this.logger.info("Updating habatica task: " + todoistTask.content);
-    if (todoistTask.parent !== null) {
+    this.logger.info("Updating habitica task:", todoistTask);
+    if (!!todoistTask.parent) {
       // delete tasks in habitica which have become child tasks in todoist
       return this.deleteTask(todoistTask);
     } else {

@@ -8,7 +8,7 @@ describe("habitica", function () {
   beforeEach(function () {
     const Habitica = require("../habitica");
     this.axios = new MockAdapter(axios);
-    this.habitica = new Habitica(this.axios.axiosInstance);
+    this.habitica = new Habitica(this.axios.axiosInstance, console, 0);
   });
   it("has a listTasks method", function () {
     this.axios.onGet("/tasks/user?type=todos").reply(200, { data: [] });

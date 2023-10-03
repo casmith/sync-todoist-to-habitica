@@ -336,22 +336,14 @@ module.exports = class Sync {
             this.logger.info(
               `Detected task that was converted to a subtask - deleting (${staleTask._id}).`
             );
-            this.habitica
-              .deleteTask(staleTask._id)
-              .then(
-                () =>
-                  todoistItem.is_deleted ||
-                  this.habitica.createChecklistItem(taskId, content)
-              );
+            return todoistItem.is_deleted || this.habitica.deleteTask(staleTask._id)
+              .then(() => this.habitica.createChecklistItem(taskId, content));
           } else {
-            return (
-              todoistItem.is_deleted ||
-              this.habitica.createChecklistItem(taskId, content)
-            );
+            return todoistItem.is_deleted || this.habitica.createChecklistItem(taskId, content);
           }
         }
       })
-    );
+    ).then(() => config);
   }
 
   scoreDailyGoalTask(config, today) {

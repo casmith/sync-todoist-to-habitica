@@ -41,11 +41,14 @@ const Habitica = require("./habitica");
 const Todoist = require("./todoist");
 const Sync = require("./sync");
 
+config.todoist.unmatchedDailyTask =
+  config.todoist.unmatchedDailyTask || process.env.TODOIST_UNMATCHED_DAILY_TASK;
+
 const todoist = Todoist.from(config.todoist.token, logger);
 const habitica = Habitica.from(
   config.habitica.apiUser,
   config.habitica.apiKey,
-  logger
+  logger,
 );
 
 const initialSyncToken = process.env.INITIAL_SYNC_TOKEN;
@@ -70,7 +73,7 @@ new Sync(todoist, habitica, logger, config)
     const sync = config.sync;
     lastRun.syncToken = sync.sync_token;
     logger.info(
-      `Sync finished, writing lastRun.json with new syncToken: ${lastRun.syncToken}`
+      `Sync finished, writing lastRun.json with new syncToken: ${lastRun.syncToken}`,
     );
     jsonFile.writeFileSync(configDir + "lastRun.json", lastRun);
   })

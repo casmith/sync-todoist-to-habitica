@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.24.0",
+    "axios": "^1.5.1",
     "husky": "^7.0.4",
     "jsonfile": "^6.1.0",
     "lint-staged": "^12.4.1",

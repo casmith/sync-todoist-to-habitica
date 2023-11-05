@@ -14,7 +14,7 @@
     "axios": "^1.6.0",
     "husky": "^8.0.3",
     "jsonfile": "^6.1.0",
-    "lint-staged": "^15.0.1",
+    "lint-staged": "^15.0.2",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "prettier": "^3.0.3",

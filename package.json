@@ -17,7 +17,7 @@
     "lint-staged": "^15.1.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
-    "prettier": "^3.0.3",
+    "prettier": "^3.1.0",
     "uuid": "^9.0.1",
     "winston": "^3.11.0"
   },

@@ -50,7 +50,7 @@ module.exports = class Sync {
             acc[task.alias] = task._id;
             return acc;
           },
-          {}
+          {},
         );
       })
       .then(() => {
@@ -84,7 +84,7 @@ module.exports = class Sync {
       .then((sync) => {
         config.sync = sync;
         config.sync.checklistItems = sync.items.filter(
-          (item) => item.parent_id
+          (item) => item.parent_id,
         );
 
         // TODO: normalize the data structure so it confirms with the task list below
@@ -118,7 +118,7 @@ module.exports = class Sync {
     }
     return config.append(
       "items",
-      sync.items.filter((item) => !item.checked)
+      sync.items.filter((item) => !item.checked),
     );
   }
 
@@ -137,31 +137,31 @@ module.exports = class Sync {
             const task = config.habiticaDailies.find(
               (i) =>
                 i.text.toLowerCase().trim() ===
-                item.content.toLowerCase().trim()
+                item.content.toLowerCase().trim(),
             );
             if (task) {
               this.logger.info("Scoring daily task", task.text);
               return this.habitica
                 .scoreTask(task._id)
                 .catch((e) =>
-                  console.warn("Failed to score a task: " + item.content)
+                  console.warn("Failed to score a task: " + item.content),
                 );
             } else if (config.todoist.unmatchedDailyTask) {
               return this.scoreTaskByName(
                 config,
-                config.todoist.unmatchedDailyTask
+                config.todoist.unmatchedDailyTask,
               ).catch((e) => {
                 this.logger.error("Failed to score unmatched daily task:" + e);
               });
             } else {
               this.logger.warn(
-                `Recurring task completed but no daily could be found in habitica called [${item.content}]`
+                `Recurring task completed but no daily could be found in habitica called [${item.content}]`,
               );
             }
           } else {
             this.logger.info(`Skipping newly-created daily [${item.content}]`);
           }
-        })
+        }),
     ).then(() => config);
   }
 
@@ -192,7 +192,7 @@ module.exports = class Sync {
         if (checklistItem) {
           await this.habitica.deleteChecklistItem(
             habiticaTask.id,
-            checklistItem.id
+            checklistItem.id,
           );
         } else {
           await this.deleteTask(item);
@@ -226,7 +226,7 @@ module.exports = class Sync {
         const lastDailyGoal = lastRun.lastDailyGoal;
         const completed = stats["days_items"][0].total_completed;
         this.logger.info(
-          "Daily goal: [" + goal + "] Completed: [" + completed + "]"
+          "Daily goal: [" + goal + "] Completed: [" + completed + "]",
         );
         if (
           completed >= goal &&
@@ -260,7 +260,7 @@ module.exports = class Sync {
     return this.habitica
       .deleteTask(task.id)
       .catch((e) =>
-        console.warn(`Task ${task.id} wasn't deleted because it doesn't exist`)
+        console.warn(`Task ${task.id} wasn't deleted because it doesn't exist`),
       );
   }
 
@@ -295,19 +295,19 @@ module.exports = class Sync {
         const parentTask = this.findRootTask(todoistItem);
         const taskId = parentTask.id;
         const habiticaTask = config.habiticaTasks.find(
-          (i) => i && i.alias == parentTask.id
+          (i) => i && i.alias == parentTask.id,
         );
         if (!habiticaTask) {
           this.logger.warn(
             "Could not find a habitica task for todoist item",
-            parentTask.id
+            parentTask.id,
           );
           return;
         }
         const checklist = habiticaTask.checklist;
         const content = this.createChecklistItem(todoistItem);
         const habiticaChecklistItem = checklist.find((item) =>
-          item.text.includes(`[${todoistItem.id}]`)
+          item.text.includes(`[${todoistItem.id}]`),
         );
         if (habiticaChecklistItem) {
           const itemId = habiticaChecklistItem.id;
@@ -327,22 +327,29 @@ module.exports = class Sync {
           console.log("creating checklist item");
 
           const staleTask = config.habiticaTasks.find(
-            (t) => t.alias == todoistItem.id
+            (t) => t.alias == todoistItem.id,
           );
 
           // if the task exists, delete it
           if (staleTask) {
             // found a task that was converted to a checklist item, so we need to delete it
             this.logger.info(
-              `Detected task that was converted to a subtask - deleting (${staleTask._id}).`
+              `Detected task that was converted to a subtask - deleting (${staleTask._id}).`,
             );
-            return todoistItem.is_deleted || this.habitica.deleteTask(staleTask._id)
-              .then(() => this.habitica.createChecklistItem(taskId, content));
+            return (
+              todoistItem.is_deleted ||
+              this.habitica
+                .deleteTask(staleTask._id)
+                .then(() => this.habitica.createChecklistItem(taskId, content))
+            );
           } else {
-            return todoistItem.is_deleted || this.habitica.createChecklistItem(taskId, content);
+            return (
+              todoistItem.is_deleted ||
+              this.habitica.createChecklistItem(taskId, content)
+            );
           }
         }
-      })
+      }),
     ).then(() => config);
   }
 
@@ -378,7 +385,7 @@ module.exports = class Sync {
   }
 
   updateTask(todoistTask) {
-    this.logger.info("Updating habitica task:", todoistTask);
+    this.logger.info("Updating habitica task:" + todoistTask.content);
     if (!!todoistTask.parent) {
       // delete tasks in habitica which have become child tasks in todoist
       return this.deleteTask(todoistTask);

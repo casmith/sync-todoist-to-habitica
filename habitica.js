@@ -44,6 +44,7 @@ module.exports = class Habitica {
   }
 
   async updateTask(task) {
+    await this.sleep(this.sleepMs);
     return await this.axios.put(`/tasks/${task.alias}`, task);
   }
 
@@ -73,7 +74,7 @@ module.exports = class Habitica {
 
   async listTasks(type = "todos") {
     const response = await this.get(
-      "/tasks/user" + (type ? `?type=${type}` : "")
+      "/tasks/user" + (type ? `?type=${type}` : ""),
     );
     return response.data;
   }
@@ -88,7 +89,7 @@ module.exports = class Habitica {
 
   async createChecklistItem(taskId, text) {
     this.logger.info(
-      `Creating checklist item on task ${taskId} with content ${text}`
+      `Creating checklist item on task ${taskId} with content ${text}`,
     );
     return await this.post(`/tasks/${taskId}/checklist`, { text });
   }

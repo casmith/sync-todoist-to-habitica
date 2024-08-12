@@ -24,7 +24,7 @@
   "devDependencies": {
     "axios-mock-adapter": "^1.22.0",
     "chai": "^4.3.10",
-    "mocha": "^10.2.0",
+    "mocha": "^10.7.3",
     "nyc": "^15.1.0",
     "sinon": "^17.0.1"
   },

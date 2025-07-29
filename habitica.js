@@ -13,6 +13,7 @@ module.exports = class Habitica {
     const headers = {
       ["x-api-user"]: apiUser,
       ["x-api-key"]: apiKey,
+      ["x-client"]: `${apiUser}-sync-todoist-to-habitica`,
     };
     const baseURL = "https://habitica.com/api/v3/";
     const newAxios = axios.create({ headers, baseURL });

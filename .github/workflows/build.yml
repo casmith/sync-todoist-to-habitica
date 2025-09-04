@@ -46,11 +46,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+    # deploy to docker hub, only run on main branch
+      - name: get version
+        id: get_version
+        if: github.ref == 'refs/heads/master'
+        run: echo "next_version=$(printf '%(%Y.%m.%d.)T'; git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: casmith/sync-todoist-to-habitica:latest
+          tags: casmith/sync-todoist-to-habitica:latest,casmith/sync-todoist-to-habitica:${{ steps.get_version.outputs.next_version }}
           platforms: linux/amd64,linux/arm64

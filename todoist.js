@@ -1,7 +1,7 @@
 "use strict";
 
 const _ = require("lodash");
-const baseUrl = "https://api.todoist.com/api/v1";
+const baseUrl = "https://api.todoist.com/rest/v2";
 const axios = require("axios");
 
 const REPEAT_WEEKDAYS = {
@@ -38,13 +38,13 @@ module.exports = class Todoist {
 
   deleteAllTasks() {
     return this.listTasks().then((items) =>
-      Promise.all(items.map((i) => this.deleteTask(i.id))),
+      Promise.all(items.map((i) => this.deleteTask(i.id)))
     );
   }
 
   getStats() {
     return this.axios
-      .get("https://api.todoist.com/api/v1/stats/completed")
+      .get("https://api.todoist.com/sync/v9/completed/get_stats")
       .then((r) => r.data);
   }
 
@@ -69,7 +69,7 @@ module.exports = class Todoist {
 
   sync(token) {
     const url =
-      'https://api.todoist.com/api/v1/sync?resource_types=["all"]&sync_token=' +
+      'https://api.todoist.com/sync/v9/sync?resource_types=["all"]&sync_token=' +
       token;
     this.logger.info("Sync Token:", token);
     return this.axios.get(url).then((r) => r.data);

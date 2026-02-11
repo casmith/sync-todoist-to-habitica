@@ -15,11 +15,14 @@ const configFile = configDir + "config.json";
 let config;
 if (fs.existsSync(configFile)) {
   config = require(configFile);
+  console.log(JSON.stringify(config));
 } else {
   // apply configuration from environment vars
   const habiticaApiUser = process.env.HABITICA_API_USER;
   const habiticaApiKey = process.env.HABITICA_API_KEY;
   const todoistApiToken = process.env.TODOIST_API_TOKEN;
+
+  console.log(habiticaApiKey, habiticaApiUser, todoistApiToken);
   if (!!habiticaApiUser && !!habiticaApiKey && !!todoistApiToken) {
     logger.info("Applying configuration from environment variables");
     config = {

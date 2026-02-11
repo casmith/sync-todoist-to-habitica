@@ -1,7 +1,7 @@
 "use strict";
 
 const _ = require("lodash");
-const baseUrl = "https://api.todoist.com/rest/v2";
+const baseUrl = "https://api.todoist.com/api/v1";
 const axios = require("axios");
 
 const REPEAT_WEEKDAYS = {
@@ -38,14 +38,8 @@ module.exports = class Todoist {
 
   deleteAllTasks() {
     return this.listTasks().then((items) =>
-      Promise.all(items.map((i) => this.deleteTask(i.id)))
+      Promise.all(items.map((i) => this.deleteTask(i.id))),
     );
-  }
-
-  getStats() {
-    return this.axios
-      .get("https://api.todoist.com/sync/v9/completed/get_stats")
-      .then((r) => r.data);
   }
 
   getTask(taskId) {
@@ -63,16 +57,25 @@ module.exports = class Todoist {
   listTasks() {
     return this.axios.get(`${baseUrl}/tasks`).then((r) => {
       this.logger.info("Done fetching all todoist tasks");
-      return r.data;
+
+      console.log(r.data.results);
+
+      return r.data.results;
     });
   }
 
   sync(token) {
-    const url =
-      'https://api.todoist.com/sync/v9/sync?resource_types=["all"]&sync_token=' +
-      token;
+    const url = "https://api.todoist.com/api/v1/sync";
     this.logger.info("Sync Token:", token);
-    return this.axios.get(url).then((r) => r.data);
+    return this.axios
+      .post(
+        url,
+        new URLSearchParams({
+          resource_types: '["all"]',
+          sync_token: token,
+        }),
+      )
+      .then((r) => r.data);
   }
 
   calculateFrequency(dateExpr) {

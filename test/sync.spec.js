@@ -49,7 +49,7 @@ class FakeHabitica {
 
   async deleteTask(id) {
     const idx = this.tasks.findIndex(
-      (t) => t._id === id || t.id === id || t.alias === id
+      (t) => t._id === id || t.id === id || t.alias === id,
     );
     this.tasks.splice(idx, idx >= 0 ? 1 : 0);
   }
@@ -67,16 +67,17 @@ class FakeHabitica {
   }
 }
 
-function statsFor(goal, completed) {
+function syncDataFor(goal, completed, items) {
   return {
-    goals: {
-      daily_goal: goal,
+    items: items,
+    user: { daily_goal: goal },
+    stats: {
+      days_items: [
+        {
+          total_completed: completed,
+        },
+      ],
     },
-    days_items: [
-      {
-        total_completed: completed,
-      },
-    ],
   };
 }
 
@@ -89,7 +90,6 @@ describe("sync", function () {
     const config = require("../config");
     const todoist = new Todoist(config.todoist.token, this.logger);
     this.todoist = {
-      getStats() {},
       listProjects() {},
       listTasks() {},
       sync() {},
@@ -100,14 +100,10 @@ describe("sync", function () {
   });
 
   it("syncs a new task to habitica", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 0)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 0, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
     const originalTasks = await this.habitica.listTasks();
     await this.sync.sync({});
@@ -116,14 +112,10 @@ describe("sync", function () {
   });
 
   it("scores a task when it is completed", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 0)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 0, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
     const originalTasks = await this.habitica.listTasks();
     await this.sync.sync({});
@@ -136,14 +128,10 @@ describe("sync", function () {
     expect(completedTasks).to.have.lengthOf(1);
   });
   it("scores the daily task in habitica when the todooist daily goal is reached", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 6)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 6, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
     const originalTasks = await this.habitica.listTasks();
     await this.sync.sync({});
@@ -153,14 +141,10 @@ describe("sync", function () {
   });
 
   it("deletes a task from habitica when it is deleted from todoist", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 6)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 6, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
     const originalTasks = await this.habitica.listTasks();
 
@@ -178,14 +162,10 @@ describe("sync", function () {
   });
 
   it("adds a todoist subtask as a checklist item in habitica", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 0)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 0, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
     // initial sync, create the parent task
     await this.sync.sync({});
 
@@ -202,14 +182,10 @@ describe("sync", function () {
   });
 
   it("convert an existing task to a subtask", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 0)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 0, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
     // initial sync, create the parent task
     await this.sync.sync({});
@@ -235,14 +211,10 @@ describe("sync", function () {
   });
 
   it("rename an existing task", async function () {
-    sinon
-      .stub(this.todoist, "getStats")
-      .returns(Promise.resolve(statsFor(6, 0)));
-    const tasks = {
-      items: [{ id: uuidv4(), checked: false, content: "My task" }],
-    };
+    const items = [{ id: uuidv4(), checked: false, content: "My task" }];
+    const tasks = syncDataFor(6, 0, items);
     sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
-    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(tasks.items));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
     // initial sync, create the parent task
     await this.sync.sync({});
     const tasksBeforeRename = await this.habitica.listTasks();

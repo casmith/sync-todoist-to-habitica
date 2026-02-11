@@ -82,6 +82,7 @@ module.exports = class Sync {
     return this.todoist
       .sync(syncToken)
       .then((sync) => {
+        this.logger.info("Sync response keys:", Object.keys(sync));
         config.sync = sync;
         config.sync.checklistItems = sync.items.filter(
           (item) => item.parent_id,
@@ -217,25 +218,31 @@ module.exports = class Sync {
   }
 
   checkDailyGoal(config) {
-    return this.todoist
-      .getStats()
-      .then((stats) => {
-        const lastRun = config.lastRun;
-        const goal = stats.goals.daily_goal;
-        const today = moment(stats["days_items"][0].date);
-        const lastDailyGoal = lastRun.lastDailyGoal;
-        const completed = stats["days_items"][0].total_completed;
-        this.logger.info(
-          "Daily goal: [" + goal + "] Completed: [" + completed + "]",
-        );
-        if (
-          completed >= goal &&
-          (!lastDailyGoal || today.isAfter(lastRun.lastDailyGoal, "d"))
-        ) {
-          return this.scoreDailyGoalTask(config, today);
-        }
-      })
-      .then(() => config);
+    const stats = config.sync.stats;
+    const user = config.sync.user;
+    if (!stats || !user) {
+      this.logger.info(
+        "Skipping daily goal check (no stats/user in sync response)",
+      );
+      return Promise.resolve(config);
+    }
+    const lastRun = config.lastRun;
+    const goal = user.daily_goal;
+    const today = moment(stats["days_items"][0].date);
+    const lastDailyGoal = lastRun.lastDailyGoal;
+    const completed = stats["days_items"][0].total_completed;
+    this.logger.info(
+      "Daily goal: [" + goal + "] Completed: [" + completed + "]",
+    );
+    if (
+      completed >= goal &&
+      (!lastDailyGoal || today.isAfter(lastRun.lastDailyGoal, "d"))
+    ) {
+      return Promise.resolve(this.scoreDailyGoalTask(config, today)).then(
+        () => config,
+      );
+    }
+    return Promise.resolve(config);
   }
 
   createHabiticaTask(todoistTask) {

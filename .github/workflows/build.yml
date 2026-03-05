@@ -46,11 +46,18 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-    # deploy to docker hub, only run on main branch
+      # deploy to docker hub, only run on main branch
       - name: get version
         id: get_version
-        if: github.ref == 'refs/heads/master'
-        run: echo "next_version=$(printf '%(%Y.%m.%d.)T'; git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "next_version=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          elif [ "$GITHUB_REF" = "refs/heads/master" ]; then
+            echo "next_version=$(date -u +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+          else
+            branch_name=${GITHUB_REF##*/}
+            echo "next_version=dev-${branch_name}-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+          fi
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2

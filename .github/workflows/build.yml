@@ -68,21 +68,3 @@ jobs:
           push: true
           tags: casmith/sync-todoist-to-habitica:latest,casmith/sync-todoist-to-habitica:${{ steps.get_version.outputs.next_version }}
           platforms: linux/amd64,linux/arm64
-
-  cleanup_pr_tag:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
-    steps:
-      - name: Delete Docker Hub PR tag
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          REPO_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPO_NAME: sync-todoist-to-habitica
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          TAG="pr-${PR_NUMBER}"
-          echo "Attempting to delete Docker Hub tag: ${REPO_USER}/${REPO_NAME}:${TAG}"
-          API_URL="https://hub.docker.com/v2/repositories/${REPO_USER}/${REPO_NAME}/tags/${TAG}/"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -u "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" "${API_URL}") || true
-          echo "Docker Hub API returned status: ${HTTP_STATUS}"

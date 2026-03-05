@@ -22,7 +22,10 @@ if (fs.existsSync(configFile)) {
   const habiticaApiKey = process.env.HABITICA_API_KEY;
   const todoistApiToken = process.env.TODOIST_API_TOKEN;
 
-  console.log(habiticaApiKey, habiticaApiUser, todoistApiToken);
+  logger.info(
+    "Read configuration values from environment variables " +
+      "(HABITICA_API_USER, HABITICA_API_KEY, TODOIST_API_TOKEN)",
+  );
   if (!!habiticaApiUser && !!habiticaApiKey && !!todoistApiToken) {
     logger.info("Applying configuration from environment variables");
     config = {

@@ -2,11 +2,13 @@
 
 const axios = require("axios");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 module.exports = class Habitica {
-  constructor(myAxios, logger = console, sleepMs = 2000) {
+  constructor(myAxios, logger = console) {
     this.logger = logger;
     this.axios = myAxios;
-    this.sleepMs = sleepMs;
+    this._setupRetryInterceptor();
   }
 
   static from(apiUser, apiKey, logger = console) {
@@ -20,18 +22,25 @@ module.exports = class Habitica {
     return new Habitica(newAxios, logger);
   }
 
-  async sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  _setupRetryInterceptor() {
+    this.axios.interceptors.response.use(null, async (error) => {
+      if (error.response && error.response.status === 429) {
+        const retryAfter = error.response.headers["retry-after"];
+        const waitMs = retryAfter ? parseFloat(retryAfter) * 1000 : 60000;
+        this.logger.warn(`Rate limited, retrying after ${waitMs}ms`);
+        await sleep(waitMs);
+        return this.axios.request(error.config);
+      }
+      throw error;
+    });
   }
 
   async post(url, form) {
-    await this.sleep(this.sleepMs);
     const res = await this.axios.post(url, form);
     return res.data;
   }
 
   async get(url) {
-    await this.sleep(this.sleepMs);
     const response = await this.axios.get(url);
     return response.data;
   }
@@ -45,16 +54,14 @@ module.exports = class Habitica {
   }
 
   async updateTask(task) {
-    await this.sleep(this.sleepMs);
     return await this.axios.put(`/tasks/${task.alias}`, task);
   }
 
   async deleteTask(taskId) {
     try {
-      await this.sleep(this.sleepMs);
       return await this.axios.delete(`/tasks/${taskId}`);
     } catch (err) {
-      if (err.response.status === 404) {
+      if (err.response && err.response.status === 404) {
         this.logger.warn("Deleting task that no longer exists", taskId);
       } else {
         throw err;
@@ -64,7 +71,7 @@ module.exports = class Habitica {
 
   async deleteAllTasks(type) {
     const tasks = await this.listTasks(type);
-    await deleteTasks(tasks.map((task) => task._id));
+    await this.deleteTasks(tasks.map((task) => task._id));
   }
 
   async deleteTasks(taskIds) {
@@ -96,14 +103,12 @@ module.exports = class Habitica {
   }
 
   async updateChecklistItem(taskId, itemId, text) {
-    await this.sleep(this.sleepMs);
     return await this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {
       text,
     });
   }
 
   async deleteChecklistItem(taskId, itemId) {
-    await this.sleep(this.sleepMs);
     return await this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
   }
 

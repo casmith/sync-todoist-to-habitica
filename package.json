@@ -6,7 +6,7 @@
   "scripts": {
     "test": "nyc --reporter=text --reporter=lcovonly  mocha --timeout 10000",
     "test:watch": "mocha --timeout 10000 --watch --growl",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "author": "",
   "license": "ISC",

@@ -28,6 +28,9 @@
     "nyc": "^18.0.0",
     "sinon": "^21.0.3"
   },
+  "overrides": {
+    "serialize-javascript": "^7.0.3"
+  },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
   }

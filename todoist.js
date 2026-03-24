@@ -58,8 +58,6 @@ module.exports = class Todoist {
     return this.axios.get(`${baseUrl}/tasks`).then((r) => {
       this.logger.info("Done fetching all todoist tasks");
 
-      console.log(r.data.results);
-
       return r.data.results;
     });
   }

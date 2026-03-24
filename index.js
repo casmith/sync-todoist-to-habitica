@@ -15,7 +15,7 @@ const configFile = configDir + "config.json";
 let config;
 if (fs.existsSync(configFile)) {
   config = require(configFile);
-  console.log(JSON.stringify(config));
+  logger.info("Configuration loaded from file");
 } else {
   // apply configuration from environment vars
   const habiticaApiUser = process.env.HABITICA_API_USER;

@@ -56,7 +56,7 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             echo "next_version=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           elif [ "$GITHUB_REF" = "refs/heads/master" ]; then
-            echo "next_version=$(date -u +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+            echo "next_version=$(date -u +'%Y.%m.%d')-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
           else
             branch_name=${GITHUB_REF##*/}
             echo "next_version=dev-${branch_name}-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT

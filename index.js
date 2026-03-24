@@ -49,6 +49,8 @@ const Sync = require("./sync");
 
 config.todoist.unmatchedDailyTask =
   config.todoist.unmatchedDailyTask || process.env.TODOIST_UNMATCHED_DAILY_TASK;
+config.dailyGoalTaskName =
+  config.dailyGoalTaskName || process.env.DAILY_GOAL_TASK_NAME;
 
 const todoist = Todoist.from(config.todoist.token, logger);
 const habitica = Habitica.from(

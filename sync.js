@@ -361,8 +361,7 @@ module.exports = class Sync {
   }
 
   scoreDailyGoalTask(config, today) {
-    // TODO: make this configurable
-    const taskName = "Todoist: Daily Goal";
+    const taskName = this.config.dailyGoalTaskName || "Todoist: Daily Goal";
     return this.scoreTaskByName(config, taskName)
       .then((task) => {
         this.logger.info(`Daily goal reached! Scored ${taskName}`, task._id);

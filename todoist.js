@@ -20,6 +20,15 @@ module.exports = class Todoist {
     this.logger = logger;
   }
 
+  _requestError(err) {
+    const method = (err.config.method || "").toUpperCase();
+    const url = err.config.url || "unknown";
+    const status = err.response
+      ? `${err.response.status} ${err.response.statusText}`
+      : err.message;
+    return new Error(`${method} ${url} failed: ${status}`);
+  }
+
   static from(apiToken, logger = console) {
     const headers = {
       Authorization: "Bearer " + apiToken,
@@ -29,11 +38,15 @@ module.exports = class Todoist {
   }
 
   createTask(item) {
-    return this.axios.post("/tasks", item);
+    return this.axios.post("/tasks", item).catch((err) => {
+      throw this._requestError(err);
+    });
   }
 
   deleteTask(id) {
-    return this.axios.delete(`${baseUrl}/tasks/${id}`);
+    return this.axios.delete(`${baseUrl}/tasks/${id}`).catch((err) => {
+      throw this._requestError(err);
+    });
   }
 
   deleteAllTasks() {
@@ -43,7 +56,12 @@ module.exports = class Todoist {
   }
 
   getTask(taskId) {
-    return this.axios.get(`${baseUrl}/tasks/${taskId}`).then((r) => r.data);
+    return this.axios
+      .get(`${baseUrl}/tasks/${taskId}`)
+      .then((r) => r.data)
+      .catch((err) => {
+        throw this._requestError(err);
+      });
   }
 
   isTaskRecurring(task) {
@@ -51,15 +69,25 @@ module.exports = class Todoist {
   }
 
   listProjects() {
-    return this.axios.get(`${baseUrl}/projects`).then((r) => r.data);
+    return this.axios
+      .get(`${baseUrl}/projects`)
+      .then((r) => r.data)
+      .catch((err) => {
+        throw this._requestError(err);
+      });
   }
 
   listTasks() {
-    return this.axios.get(`${baseUrl}/tasks`).then((r) => {
-      this.logger.info("Done fetching all todoist tasks");
+    return this.axios
+      .get(`${baseUrl}/tasks`)
+      .then((r) => {
+        this.logger.info("Done fetching all todoist tasks");
 
-      return r.data.results;
-    });
+        return r.data.results;
+      })
+      .catch((err) => {
+        throw this._requestError(err);
+      });
   }
 
   sync(token) {
@@ -73,7 +101,10 @@ module.exports = class Todoist {
           sync_token: token,
         }),
       )
-      .then((r) => r.data);
+      .then((r) => r.data)
+      .catch((err) => {
+        throw this._requestError(err);
+      });
   }
 
   calculateFrequency(dateExpr) {

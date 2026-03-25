@@ -22,6 +22,15 @@ module.exports = class Habitica {
     return new Habitica(newAxios, logger);
   }
 
+  _requestError(err) {
+    const method = (err.config.method || "").toUpperCase();
+    const url = err.config.url || "unknown";
+    const status = err.response
+      ? `${err.response.status} ${err.response.statusText}`
+      : err.message;
+    return new Error(`${method} ${url} failed: ${status}`);
+  }
+
   _setupRetryInterceptor() {
     this.axios.interceptors.response.use(null, async (error) => {
       if (error.response && error.response.status === 429) {
@@ -36,13 +45,21 @@ module.exports = class Habitica {
   }
 
   async post(url, form) {
-    const res = await this.axios.post(url, form);
-    return res.data;
+    try {
+      const res = await this.axios.post(url, form);
+      return res.data;
+    } catch (err) {
+      throw this._requestError(err);
+    }
   }
 
   async get(url) {
-    const response = await this.axios.get(url);
-    return response.data;
+    try {
+      const response = await this.axios.get(url);
+      return response.data;
+    } catch (err) {
+      throw this._requestError(err);
+    }
   }
 
   async createTask(task) {
@@ -54,7 +71,11 @@ module.exports = class Habitica {
   }
 
   async updateTask(task) {
-    return await this.axios.put(`/tasks/${task.alias}`, task);
+    try {
+      return await this.axios.put(`/tasks/${task.alias}`, task);
+    } catch (err) {
+      throw this._requestError(err);
+    }
   }
 
   async deleteTask(taskId) {
@@ -64,7 +85,7 @@ module.exports = class Habitica {
       if (err.response && err.response.status === 404) {
         this.logger.warn("Deleting task that no longer exists", taskId);
       } else {
-        throw err;
+        throw this._requestError(err);
       }
     }
   }
@@ -103,20 +124,28 @@ module.exports = class Habitica {
   }
 
   async updateChecklistItem(taskId, itemId, text) {
-    return await this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {
-      text,
-    });
+    try {
+      return await this.axios.put(`/tasks/${taskId}/checklist/${itemId}`, {
+        text,
+      });
+    } catch (err) {
+      throw this._requestError(err);
+    }
   }
 
   async deleteChecklistItem(taskId, itemId) {
-    return await this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
+    try {
+      return await this.axios.delete(`/tasks/${taskId}/checklist/${itemId}`);
+    } catch (err) {
+      throw this._requestError(err);
+    }
   }
 
   async scoreChecklistItem(taskId, itemId) {
     try {
       await this.post(`/tasks/${taskId}/checklist/${itemId}/score`);
-    } catch (e) {
-      throw new Error("failed to score up a task");
+    } catch (err) {
+      throw this._requestError(err);
     }
   }
 };

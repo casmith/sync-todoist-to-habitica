@@ -124,7 +124,8 @@ describe("habitica", function () {
         await this.habitica.getTask("123");
         expect.fail("should have thrown");
       } catch (err) {
-        expect(err.response.status).to.equal(500);
+        expect(err.message).to.include("GET /tasks/123 failed");
+        expect(err.message).to.include("500");
       }
     });
   });

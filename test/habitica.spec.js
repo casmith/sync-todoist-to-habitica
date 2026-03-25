@@ -3,6 +3,7 @@
 const expect = require("chai").expect;
 const axios = require("axios");
 const MockAdapter = require("axios-mock-adapter");
+const sinon = require("sinon");
 
 describe("habitica", function () {
   beforeEach(function () {
@@ -78,4 +79,53 @@ describe("habitica", function () {
   });
 
   it("fails to score a checklist item", function () {});
+
+  describe("rate limit handling", function () {
+    beforeEach(function () {
+      const Habitica = require("../habitica");
+      const instance = axios.create();
+      this.mock = new MockAdapter(instance);
+      this.logger = {
+        info: sinon.stub(),
+        warn: sinon.stub(),
+        error: sinon.stub(),
+      };
+      this.habitica = new Habitica(instance, this.logger);
+    });
+
+    it("retries after 429 with retry-after header", async function () {
+      this.mock
+        .onGet("/tasks/123")
+        .replyOnce(429, {}, { "retry-after": "0.01" })
+        .onGet("/tasks/123")
+        .replyOnce(200, { success: true });
+
+      const result = await this.habitica.getTask("123");
+      expect(result).to.deep.equal({ success: true });
+      expect(this.logger.warn.calledOnce).to.be.true;
+      expect(this.logger.warn.firstCall.args[0]).to.include("Rate limited");
+    });
+
+    it("retries POST requests after 429", async function () {
+      this.mock
+        .onPost("/tasks/user")
+        .replyOnce(429, {}, { "retry-after": "0.01" })
+        .onPost("/tasks/user")
+        .replyOnce(200, { created: true });
+
+      const result = await this.habitica.createTask({ text: "test" });
+      expect(result).to.deep.equal({ created: true });
+    });
+
+    it("throws non-429 errors", async function () {
+      this.mock.onGet("/tasks/123").reply(500);
+
+      try {
+        await this.habitica.getTask("123");
+        expect.fail("should have thrown");
+      } catch (err) {
+        expect(err.response.status).to.equal(500);
+      }
+    });
+  });
 });

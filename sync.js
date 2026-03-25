@@ -114,7 +114,7 @@ module.exports = class Sync {
       try {
         await this.habitica.scoreTask(item.id);
       } catch (e) {
-        console.warn("Failed to score a task: " + item.content);
+        this.logger.warn("Failed to score a task: " + item.content);
       }
     }
     return config.append(
@@ -145,7 +145,7 @@ module.exports = class Sync {
               return this.habitica
                 .scoreTask(task._id)
                 .catch((e) =>
-                  console.warn("Failed to score a task: " + item.content),
+                  this.logger.warn("Failed to score a task: " + item.content),
                 );
             } else if (config.todoist.unmatchedDailyTask) {
               return this.scoreTaskByName(
@@ -267,7 +267,9 @@ module.exports = class Sync {
     return this.habitica
       .deleteTask(task.id)
       .catch((e) =>
-        console.warn(`Task ${task.id} wasn't deleted because it doesn't exist`),
+        this.logger.warn(
+          `Task ${task.id} wasn't deleted because it doesn't exist`,
+        ),
       );
   }
 
@@ -331,7 +333,7 @@ module.exports = class Sync {
               });
           }
         } else {
-          console.log("creating checklist item");
+          this.logger.info("creating checklist item");
 
           const staleTask = config.habiticaTasks.find(
             (t) => t.alias == todoistItem.id,

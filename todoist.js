@@ -26,7 +26,11 @@ module.exports = class Todoist {
     const status = err.response
       ? `${err.response.status} ${err.response.statusText}`
       : err.message;
-    return new Error(`${method} ${url} failed: ${status}`);
+    const error = new Error(`${method} ${url} failed: ${status}`);
+    if (err.response) {
+      error.statusCode = err.response.status;
+    }
+    return error;
   }
 
   static from(apiToken, logger = console) {

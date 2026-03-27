@@ -85,4 +85,12 @@ new Sync(todoist, habitica, logger, config)
     );
     jsonFile.writeFileSync(configDir + "lastRun.json", lastRun);
   })
-  .then(() => logger.info("done"));
+  .then(() => logger.info("done"))
+  .catch((err) => {
+    if (err.statusCode >= 500 && err.statusCode < 600) {
+      logger.error(`[TODOIST_SERVER_ERROR] ${err.message}`);
+      process.exit(0);
+    }
+    logger.error(`[SYNC_FATAL_ERROR] ${err.message}`);
+    process.exit(1);
+  });

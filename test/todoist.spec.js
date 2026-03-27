@@ -48,6 +48,32 @@ describe("todoist", function () {
     });
   });
 
+  describe("_requestError()", function () {
+    it("should include statusCode when response is present", function () {
+      const err = {
+        config: { method: "get", url: "/api/v1/tasks" },
+        response: { status: 502, statusText: "Bad Gateway" },
+      };
+      const result = this.todoist._requestError(err);
+      expect(result).to.be.an("error");
+      expect(result.message).to.equal(
+        "GET /api/v1/tasks failed: 502 Bad Gateway",
+      );
+      expect(result.statusCode).to.equal(502);
+    });
+
+    it("should not set statusCode when no response is present", function () {
+      const err = {
+        config: { method: "post", url: "/api/v1/sync" },
+        message: "ECONNREFUSED",
+      };
+      const result = this.todoist._requestError(err);
+      expect(result).to.be.an("error");
+      expect(result.message).to.equal("POST /api/v1/sync failed: ECONNREFUSED");
+      expect(result.statusCode).to.be.undefined;
+    });
+  });
+
   describe("#calculateFrequency()", function () {
     it('is given "every day"', function () {
       expect(this.todoist.calculateFrequency("every day")).to.deep.equal({
@@ -117,7 +143,7 @@ describe("todoist", function () {
     it('is given "every jan 27th"');
     it('is given "every other monday"', function () {
       expect(
-        this.todoist.calculateFrequency("every other monday")
+        this.todoist.calculateFrequency("every other monday"),
       ).to.deep.equal({
         frequency: "weekly",
         everyX: 2,

@@ -1,6 +1,5 @@
 "use strict";
 
-const _ = require("lodash");
 const baseUrl = "https://api.todoist.com/api/v1";
 const axios = require("axios");
 
@@ -69,7 +68,7 @@ module.exports = class Todoist {
   }
 
   isTaskRecurring(task) {
-    return _.get(task, "due.is_recurring", false);
+    return task?.due?.is_recurring ?? false;
   }
 
   listProjects() {
@@ -199,7 +198,7 @@ module.exports = class Todoist {
   }
 
   getDay(dayExpr) {
-    switch (_.toLower(dayExpr)) {
+    switch (dayExpr.toLowerCase()) {
       case "monday":
       case "mon":
       case "m":

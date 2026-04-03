@@ -136,11 +136,56 @@ describe("todoist", function () {
       });
     });
 
-    it('is given "every monday, friday"');
-    it('is given "every 3 days"');
-    it('is given "every 3rd friday"');
-    it('is given "every 27th"');
-    it('is given "every jan 27th"');
+    it('is given "every monday, friday"', function () {
+      expect(
+        this.todoist.calculateFrequency("every monday, friday"),
+      ).to.deep.equal({
+        frequency: "weekly",
+        repeat: {
+          su: false,
+          m: true,
+          t: false,
+          w: false,
+          th: false,
+          f: true,
+          s: false,
+        },
+      });
+    });
+    it('is given "every 3 days"', function () {
+      expect(this.todoist.calculateFrequency("every 3 days")).to.deep.equal({
+        frequency: "daily",
+        everyX: 3,
+      });
+    });
+    it('is given "every 3rd friday"', function () {
+      expect(this.todoist.calculateFrequency("every 3rd friday")).to.deep.equal(
+        {
+          frequency: "weekly",
+          everyX: 3,
+          repeat: {
+            su: false,
+            m: false,
+            t: false,
+            w: false,
+            th: false,
+            f: true,
+            s: false,
+          },
+        },
+      );
+    });
+    it('is given "every 27th"', function () {
+      expect(this.todoist.calculateFrequency("every 27th")).to.deep.equal({
+        frequency: "monthly",
+        daysOfMonth: [27],
+      });
+    });
+    it('is given "every jan 27th"', function () {
+      expect(this.todoist.calculateFrequency("every jan 27th")).to.deep.equal({
+        frequency: "yearly",
+      });
+    });
     it('is given "every other monday"', function () {
       expect(
         this.todoist.calculateFrequency("every other monday"),

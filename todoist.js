@@ -134,6 +134,53 @@ module.exports = class Todoist {
       };
     }
 
+    // "every monday, friday" - multiple days of the week
+    const multiDayMatch = dateExpr.match(/^every\s+(.+,\s*.+)$/i);
+    if (multiDayMatch) {
+      const days = multiDayMatch[1].split(/\s*,\s*/);
+      const repeat = this.getRepeat();
+      days.forEach((d) => {
+        const day = this.getDay(d.trim());
+        if (day) repeat[day] = true;
+      });
+      return { frequency: "weekly", repeat };
+    }
+
+    // "every 3rd friday" - every Nth weekday
+    const nthDayMatch = dateExpr.match(
+      /^every\s+(\d+)(?:st|nd|rd|th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|tues|wed|thurs|thu|fri|sat|sun)\s*$/i,
+    );
+    if (nthDayMatch) {
+      return {
+        frequency: "weekly",
+        everyX: parseInt(nthDayMatch[1]),
+        repeat: this.getRepeat(this.getDay(nthDayMatch[2])),
+      };
+    }
+
+    // "every 3 days" - every N days
+    const everyNDaysMatch = dateExpr.match(/^every\s+(\d+)\s+days?$/i);
+    if (everyNDaysMatch) {
+      return { frequency: "daily", everyX: parseInt(everyNDaysMatch[1]) };
+    }
+
+    // "every jan 27th" - specific month and day, yearly
+    const monthDayMatch = dateExpr.match(
+      /^every\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+(\d+)(?:st|nd|rd|th)?$/i,
+    );
+    if (monthDayMatch) {
+      return { frequency: "yearly" };
+    }
+
+    // "every 27th" - specific day of month
+    const dayOfMonthMatch = dateExpr.match(/^every\s+(\d+)(?:st|nd|rd|th)$/i);
+    if (dayOfMonthMatch) {
+      return {
+        frequency: "monthly",
+        daysOfMonth: [parseInt(dayOfMonthMatch[1])],
+      };
+    }
+
     if (dateExpr === "every month" || dateExpr === "monthly") {
       return {
         frequency: "monthly",
@@ -187,7 +234,7 @@ module.exports = class Todoist {
       f: false,
       s: false,
     };
-    repeat[day] = true;
+    if (day) repeat[day] = true;
     return repeat;
   }
 };

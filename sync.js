@@ -114,7 +114,7 @@ module.exports = class Sync {
       try {
         await this.habitica.scoreTask(item.id);
       } catch (e) {
-        this.logger.warn("Failed to score a task: " + item.content);
+        this.logger.error("Failed to score a task: " + item.content, e);
       }
     }
     return config.append(
@@ -145,7 +145,10 @@ module.exports = class Sync {
               return this.habitica
                 .scoreTask(task._id)
                 .catch((e) =>
-                  this.logger.warn("Failed to score a task: " + item.content),
+                  this.logger.error(
+                    "Failed to score a task: " + item.content,
+                    e,
+                  ),
                 );
             } else if (config.todoist.unmatchedDailyTask) {
               return this.scoreTaskByName(
@@ -207,7 +210,7 @@ module.exports = class Sync {
             const newItem = await this.createTask(item);
             this.config.habiticaTasks.push(newItem);
           } catch (e) {
-            this.logger.warn("failed to create task: " + item.content);
+            this.logger.error("Failed to create task: " + item.content, e);
           }
         } else {
           this.logger.info("skipping child task", item.content);
@@ -269,6 +272,7 @@ module.exports = class Sync {
       .catch((e) =>
         this.logger.warn(
           `Task ${task.id} wasn't deleted because it doesn't exist`,
+          e,
         ),
       );
   }
@@ -369,7 +373,7 @@ module.exports = class Sync {
         this.logger.info(`Daily goal reached! Scored ${taskName}`, task._id);
         config.lastRun.lastDailyGoal = today;
       })
-      .catch((e) => this.logger.info(e));
+      .catch((e) => this.logger.error("Failed to score daily goal task", e));
   }
 
   scoreTaskByName(config, taskName) {

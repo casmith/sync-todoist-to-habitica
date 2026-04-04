@@ -78,7 +78,15 @@ describe("habitica", function () {
     return this.habitica.scoreChecklistItem("123", "1");
   });
 
-  it("fails to score a checklist item", function () {});
+  it("fails to score a checklist item", async function () {
+    this.axios.onPost("/tasks/123/checklist/1/score").reply(500);
+    try {
+      await this.habitica.scoreChecklistItem("123", "1");
+      expect.fail("should have thrown");
+    } catch (err) {
+      expect(err).to.be.an("error");
+    }
+  });
 
   describe("rate limit handling", function () {
     beforeEach(function () {

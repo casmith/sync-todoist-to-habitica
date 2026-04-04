@@ -25,7 +25,13 @@ class FakeHabitica {
 
   async createChecklistItem(taskId, content) {
     const task = this.getTask(taskId);
-    if (task) task.checklist.push(content);
+    if (task) {
+      task.checklist.push({
+        id: uuidv4(),
+        text: content,
+        completed: false,
+      });
+    }
   }
 
   createTask(task) {
@@ -64,6 +70,29 @@ class FakeHabitica {
   async updateTask(task) {
     await this.deleteTask(task.id);
     await this.createTask(task);
+  }
+
+  async updateChecklistItem(taskId, itemId, content) {
+    const task = this.getTask(taskId);
+    if (task) {
+      const item = task.checklist.find((i) => i.id === itemId);
+      if (item) item.text = content;
+    }
+  }
+
+  async scoreChecklistItem(taskId, itemId) {
+    const task = this.getTask(taskId);
+    if (task) {
+      const item = task.checklist.find((i) => i.id === itemId);
+      if (item) item.completed = !item.completed;
+    }
+  }
+
+  async deleteChecklistItem(taskId, itemId) {
+    const task = this.getTask(taskId);
+    if (task) {
+      task.checklist = task.checklist.filter((i) => i.id !== itemId);
+    }
   }
 }
 
@@ -226,11 +255,125 @@ describe("sync", function () {
     const newTasks = await this.habitica.listTasks();
     expect(newTasks.find((t) => t.text === "My renamed task")).to.exist;
   });
-  // Pending tests:
+  it("scores a checklist item when the subtask is completed", async function () {
+    const parentId = uuidv4();
+    const childId = uuidv4();
+    const items = [{ id: parentId, checked: false, content: "Parent task" }];
+    const tasks = syncDataFor(6, 0, items);
+    sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
 
-  // scoring of checklist items
-  // unscoring of checklist items
-  // unscoring of a task
-  // scoring daily/recurring tasks
-  // skipping projects
+    // sync to create the parent task
+    await this.sync.sync({});
+
+    // add a subtask
+    tasks.items = [{ id: childId, parent_id: parentId, content: "Child task" }];
+    await this.sync.sync({});
+
+    // mark the subtask as checked
+    tasks.items = [
+      {
+        id: childId,
+        parent_id: parentId,
+        content: "Child task",
+        checked: true,
+      },
+    ];
+    await this.sync.sync({});
+
+    // verify the checklist item was scored
+    const allTasks = await this.habitica.listTasks();
+    const parent = allTasks.find((t) => t.alias === parentId);
+    const checklistItem = parent.checklist.find((i) =>
+      i.text.includes(`[${childId}]`),
+    );
+    expect(checklistItem.completed).to.equal(true);
+  });
+
+  it("does not unscore a checklist item that is already completed", async function () {
+    const parentId = uuidv4();
+    const childId = uuidv4();
+    const items = [{ id: parentId, checked: false, content: "Parent task" }];
+    const tasks = syncDataFor(6, 0, items);
+    sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+    // sync to create parent
+    await this.sync.sync({});
+
+    // add and complete subtask
+    tasks.items = [
+      {
+        id: childId,
+        parent_id: parentId,
+        content: "Child task",
+        checked: true,
+      },
+    ];
+    await this.sync.sync({});
+
+    // sync again with same checked state — should remain completed, not toggle
+    await this.sync.sync({});
+
+    const allTasks = await this.habitica.listTasks();
+    const parent = allTasks.find((t) => t.alias === parentId);
+    const checklistItem = parent.checklist.find((i) =>
+      i.text.includes(`[${childId}]`),
+    );
+    expect(checklistItem.completed).to.equal(true);
+  });
+
+  it("scores a daily/recurring task", async function () {
+    const taskId = uuidv4();
+    const tomorrow = require("moment")().add(1, "day").format("YYYY-MM-DD");
+    const items = [
+      {
+        id: taskId,
+        checked: false,
+        content: "Todoist: Daily Goal",
+        due: { date: tomorrow, is_recurring: true },
+      },
+    ];
+    const tasks = syncDataFor(6, 0, items);
+    sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+    await this.sync.sync({});
+
+    const allTasks = await this.habitica.listTasks();
+    const daily = allTasks.find((t) => t.text === "Todoist: Daily Goal");
+    expect(daily.checked).to.equal(true);
+  });
+
+  it("skips tasks from ignored projects", async function () {
+    const config = require("../config");
+    config.ignoreProjects = ["Ignored Project"];
+    const Sync = require("../sync");
+    this.sync = new Sync(this.todoist, this.habitica, this.logger, config);
+
+    const projectId = uuidv4();
+    const items = [
+      {
+        id: uuidv4(),
+        checked: false,
+        content: "Ignored task",
+        project_id: projectId,
+      },
+    ];
+    const tasks = syncDataFor(6, 0, items);
+    sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+    sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+    this.todoist.listProjects.returns(
+      Promise.resolve([{ id: projectId, name: "Ignored Project" }]),
+    );
+    this.todoist.isTaskRecurring = function (task) {
+      return task?.due?.is_recurring ?? false;
+    };
+
+    const originalTasks = await this.habitica.listTasks();
+    await this.sync.sync({});
+    const newTasks = await this.habitica.listTasks();
+    expect(newTasks).to.have.lengthOf(originalTasks.length);
+  });
 });

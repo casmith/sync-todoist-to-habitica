@@ -1,7 +1,6 @@
 "use strict";
 
-const _ = require("lodash"),
-  moment = require("moment"),
+const moment = require("moment"),
   jsonFile = require("jsonfile");
 
 module.exports = class Sync {
@@ -44,14 +43,10 @@ module.exports = class Sync {
       .then((tasks) => {
         this.logger.info("Loaded tasks");
         config.habiticaTasks = tasks;
-        config.aliases = _.reduce(
-          tasks,
-          (acc, task) => {
-            acc[task.alias] = task._id;
-            return acc;
-          },
-          {},
-        );
+        config.aliases = tasks.reduce((acc, task) => {
+          acc[task.alias] = task._id;
+          return acc;
+        }, {});
       })
       .then(() => {
         return this.habitica.listDailies().then((dailies) => {
@@ -132,7 +127,7 @@ module.exports = class Sync {
         .map((item) => {
           // if the recurring task's due date is in the future, this means it was probably completed
           // unless it was simply created with a future due date
-          const dueDate = _.get(item, "due.date");
+          const dueDate = item?.due?.date;
           if (dueDate && moment(dueDate).isAfter(moment())) {
             // try to find a matching "daily" in habitica and score it
             const task = config.habiticaDailies.find(
@@ -201,7 +196,7 @@ module.exports = class Sync {
         } else {
           await this.deleteTask(item);
         }
-      } else if (_.includes(aliases, item.id + "")) {
+      } else if (aliases.includes(item.id + "")) {
         await this.updateTask(item, config.aliases[item.id]);
       } else {
         if (!item.parent_id) {
@@ -278,12 +273,14 @@ module.exports = class Sync {
   }
 
   filterIgnoredProjects(config) {
-    const ignoreProjectIds = config.ignoreProjects.map((projectName) => {
-      return _.keyBy(config.projects, "name")[projectName].id;
-    });
+    const projectsByName = Object.fromEntries(
+      (config.projects || []).map((p) => [p.name, p]),
+    );
+    const ignoreProjectIds = config.ignoreProjects.map(
+      (projectName) => projectsByName[projectName].id,
+    );
     return function (item) {
-      const projectId = item.project_id;
-      return !_.includes(ignoreProjectIds, projectId);
+      return !ignoreProjectIds.includes(item.project_id);
     };
   }
 

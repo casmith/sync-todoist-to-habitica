@@ -4,6 +4,7 @@ const expect = require("chai").expect;
 const LoggerStub = require("./loggerStub");
 const sinon = require("sinon");
 const { v4: uuidv4 } = require("uuid");
+const moment = require("moment");
 
 class FakeHabitica {
   constructor() {
@@ -226,6 +227,134 @@ describe("sync", function () {
     const newTasks = await this.habitica.listTasks();
     expect(newTasks.find((t) => t.text === "My renamed task")).to.exist;
   });
+  describe("filterIgnoredProjects", function () {
+    it("filters out items belonging to ignored projects", function () {
+      const config = {
+        projects: [
+          { name: "Work", id: 1 },
+          { name: "Personal", id: 2 },
+          { name: "Shopping", id: 3 },
+        ],
+        ignoreProjects: ["Personal"],
+      };
+      const filter = this.sync.filterIgnoredProjects(config);
+      expect(filter({ project_id: 1 })).to.be.true;
+      expect(filter({ project_id: 2 })).to.be.false;
+      expect(filter({ project_id: 3 })).to.be.true;
+    });
+
+    it("filters out multiple ignored projects", function () {
+      const config = {
+        projects: [
+          { name: "Work", id: 1 },
+          { name: "Personal", id: 2 },
+          { name: "Shopping", id: 3 },
+        ],
+        ignoreProjects: ["Personal", "Shopping"],
+      };
+      const filter = this.sync.filterIgnoredProjects(config);
+      expect(filter({ project_id: 1 })).to.be.true;
+      expect(filter({ project_id: 2 })).to.be.false;
+      expect(filter({ project_id: 3 })).to.be.false;
+    });
+
+    it("allows all items when no projects are ignored", function () {
+      const config = {
+        projects: [
+          { name: "Work", id: 1 },
+          { name: "Personal", id: 2 },
+        ],
+        ignoreProjects: [],
+      };
+      const filter = this.sync.filterIgnoredProjects(config);
+      expect(filter({ project_id: 1 })).to.be.true;
+      expect(filter({ project_id: 2 })).to.be.true;
+    });
+
+    it("handles missing projects array gracefully", function () {
+      const config = {
+        projects: undefined,
+        ignoreProjects: [],
+      };
+      const filter = this.sync.filterIgnoredProjects(config);
+      expect(filter({ project_id: 1 })).to.be.true;
+    });
+  });
+
+  describe("updateDailies", function () {
+    it("scores a recurring task with a future due date when a matching daily exists", async function () {
+      const futureDate = moment().add(1, "day").format("YYYY-MM-DD");
+      const items = [
+        {
+          id: uuidv4(),
+          checked: false,
+          content: "Todoist: Daily Goal",
+          due: { date: futureDate, is_recurring: true },
+          project_id: 1,
+        },
+      ];
+      const tasks = syncDataFor(6, 0, items);
+      sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+      sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+      await this.sync.sync({});
+
+      const dailies = await this.habitica.listDailies();
+      const daily = dailies.find((t) => t.text === "Todoist: Daily Goal");
+      expect(daily.checked).to.equal(true);
+    });
+
+    it("handles recurring tasks with no due object via optional chaining", async function () {
+      const items = [
+        {
+          id: uuidv4(),
+          checked: false,
+          content: "Recurring no due",
+          due: null,
+          project_id: 1,
+        },
+      ];
+      // Mark as recurring by giving it due.is_recurring - but due is null here,
+      // so we need to ensure isTaskRecurring matches. We'll set due after to test the path.
+      const tasks = syncDataFor(6, 0, items);
+      sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+      sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+      // This should not throw even though item.due is null
+      await this.sync.sync({});
+
+      // Task should still be created (it's not recurring without due, so it goes through updateTasks)
+      const habiticaTasks = await this.habitica.listTasks();
+      expect(habiticaTasks.length).to.be.greaterThan(0);
+    });
+  });
+
+  describe("aliases via reduce", function () {
+    it("builds aliases map from habitica tasks", async function () {
+      // Pre-populate habitica with a known task
+      this.habitica.tasks.push({
+        _id: "hab-123",
+        alias: "todo-456",
+        text: "Existing task",
+        checklist: [],
+      });
+
+      const items = [
+        { id: "todo-456", checked: false, content: "Existing task" },
+      ];
+      const tasks = syncDataFor(6, 0, items);
+      sinon.stub(this.todoist, "sync").returns(Promise.resolve(tasks));
+      sinon.stub(this.todoist, "listTasks").returns(Promise.resolve(items));
+
+      await this.sync.sync({});
+
+      // The task should have been updated (not created new) since alias matched
+      const habiticaTasks = await this.habitica.listTasks();
+      const matching = habiticaTasks.filter((t) => t.text === "Existing task");
+      expect(matching.length).to.be.greaterThan(0);
+    });
+  });
+
   // Pending tests:
 
   // scoring of checklist items

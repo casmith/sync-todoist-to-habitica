@@ -23,12 +23,13 @@ module.exports = class Habitica {
   }
 
   _requestError(err) {
-    const method = (err.config.method || "").toUpperCase();
-    const url = err.config.url || "unknown";
+    const config = err.config || {};
+    const method = (config.method || "").toUpperCase();
+    const url = config.url || "unknown";
     const status = err.response
       ? `${err.response.status} ${err.response.statusText}`
       : err.message;
-    return new Error(`${method} ${url} failed: ${status}`);
+    return new Error(`${method} ${url} failed: ${status}`, { cause: err });
   }
 
   _setupRetryInterceptor() {

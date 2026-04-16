@@ -78,7 +78,25 @@ describe("habitica", function () {
     return this.habitica.scoreChecklistItem("123", "1");
   });
 
-  it("fails to score a checklist item", function () {});
+  it("fails to score a checklist item and preserves error cause", async function () {
+    const Habitica = require("../habitica");
+    const instance = axios.create();
+    const mock = new MockAdapter(instance);
+    const logger = {
+      info: sinon.stub(),
+      warn: sinon.stub(),
+      error: sinon.stub(),
+    };
+    const habitica = new Habitica(instance, logger);
+    mock.onPost("/tasks/123/checklist/1/score").reply(500);
+    try {
+      await habitica.scoreChecklistItem("123", "1");
+      expect.fail("should have thrown");
+    } catch (err) {
+      expect(err.message).to.include("failed");
+      expect(err).to.have.property("cause");
+    }
+  });
 
   describe("rate limit handling", function () {
     beforeEach(function () {
@@ -126,6 +144,7 @@ describe("habitica", function () {
       } catch (err) {
         expect(err.message).to.include("GET /tasks/123 failed");
         expect(err.message).to.include("500");
+        expect(err).to.have.property("cause");
       }
     });
   });

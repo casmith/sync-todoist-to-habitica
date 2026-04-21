@@ -1,7 +1,6 @@
 "use strict";
 
-const _ = require("lodash"),
-  jsonFile = require("jsonfile"),
+const jsonFile = require("jsonfile"),
   fs = require("fs");
 
 const resolveConfigDir = () => {

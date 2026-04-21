@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.1...todoist-habitica-v1.1.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* unwrap paginated results in todoist listProjects ([e99df61](https://github.com/casmith/sync-todoist-to-habitica/commit/e99df61b15a2ebc509ff689f542c5b694882890d))
+
 ## [1.1.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.0...todoist-habitica-v1.1.1) (2026-04-21)
 
 

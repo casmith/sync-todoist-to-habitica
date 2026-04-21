@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.0...todoist-habitica-v1.1.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* error due to lodash still being imported ([4e23131](https://github.com/casmith/sync-todoist-to-habitica/commit/4e231317d4c104d16954791eb5346fd67e0bf223))
+
 ## [1.1.0](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.0.0...todoist-habitica-v1.1.0) (2026-04-21)
 
 

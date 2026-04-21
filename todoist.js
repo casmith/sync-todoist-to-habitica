@@ -74,7 +74,7 @@ module.exports = class Todoist {
   listProjects() {
     return this.axios
       .get(`${baseUrl}/projects`)
-      .then((r) => r.data)
+      .then((r) => r.data.results)
       .catch((err) => {
         throw this._requestError(err);
       });

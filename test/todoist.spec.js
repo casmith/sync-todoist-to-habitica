@@ -48,6 +48,22 @@ describe("todoist", function () {
     });
   });
 
+  describe("listProjects()", function () {
+    it("unwraps the paginated results array from the v1 API", function () {
+      this.axios.onGet("https://api.todoist.com/api/v1/projects").reply(200, {
+        results: [
+          { id: "1", name: "Inbox" },
+          { id: "2", name: "Work" },
+        ],
+        next_cursor: null,
+      });
+      return this.todoist.listProjects().then((projects) => {
+        expect(projects).to.be.an("array").with.lengthOf(2);
+        expect(projects[0].name).to.equal("Inbox");
+      });
+    });
+  });
+
   describe("_requestError()", function () {
     it("should include statusCode when response is present", function () {
       const err = {

@@ -13,7 +13,25 @@ permissions:
   contents: read
 
 jobs:
+  release-please:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
   build:
+    needs: [release-please]
+    if: always() && (needs.release-please.result == 'success' || needs.release-please.result == 'skipped')
     runs-on: ubuntu-latest
 
     strategy:
@@ -50,22 +68,31 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       # deploy to docker hub, only run on main branch
-      - name: get version
-        id: get_version
+      - name: get docker tags
+        id: get_tags
+        env:
+          IMAGE: casmith/sync-todoist-to-habitica
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+          RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
         run: |
+          tags=""
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            echo "next_version=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            tags="${IMAGE}:pr-${{ github.event.pull_request.number }}"
           elif [ "$GITHUB_REF" = "refs/heads/master" ]; then
             pkg_version=$(node -p "require('./package.json').version")
-            echo "next_version=${pkg_version}-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+            tags="${IMAGE}:latest,${IMAGE}:${pkg_version}-${GITHUB_SHA:0:7}"
+            if [ "$RELEASE_CREATED" = "true" ]; then
+              tags="${tags},${IMAGE}:${RELEASE_VERSION}"
+            fi
           else
             branch_name=${GITHUB_REF##*/}
-            echo "next_version=dev-${branch_name}-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+            tags="${IMAGE}:dev-${branch_name}-${GITHUB_SHA:0:8}"
           fi
+          echo "tags=${tags}" >> $GITHUB_OUTPUT
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: casmith/sync-todoist-to-habitica:latest,casmith/sync-todoist-to-habitica:${{ steps.get_version.outputs.next_version }}
+          tags: ${{ steps.get_tags.outputs.tags }}
           platforms: linux/amd64,linux/arm64

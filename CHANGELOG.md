@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.2...todoist-habitica-v1.1.3) (2026-04-26)
+
+
+### Bug Fixes
+
+* **deps:** bump axios from 1.15.1 to 1.15.2 ([#145](https://github.com/casmith/sync-todoist-to-habitica/issues/145)) ([e99b317](https://github.com/casmith/sync-todoist-to-habitica/commit/e99b31729300575ec051b4cac2f530398da7aaa9))
+
 ## [1.1.2](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.1...todoist-habitica-v1.1.2) (2026-04-21)
 
 

@@ -79,6 +79,14 @@ module.exports = class Habitica {
     }
   }
 
+  async updateTaskAlias(taskId, newAlias) {
+    try {
+      return await this.axios.put(`/tasks/${taskId}`, { alias: newAlias });
+    } catch (err) {
+      throw this._requestError(err);
+    }
+  }
+
   async deleteTask(taskId) {
     try {
       return await this.axios.delete(`/tasks/${taskId}`);

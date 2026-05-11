@@ -3,6 +3,13 @@
 const moment = require("moment"),
   jsonFile = require("jsonfile");
 
+// Pre-base32 Todoist task IDs were short numeric strings (~10 digits). Newer
+// IDs are base32 (mixed case + digits). Habitica tasks created before the
+// switchover store the legacy ID as their alias, and Todoist's API no longer
+// exposes any link from legacy -> new IDs, so we fall back to content matching
+// to migrate them.
+const LEGACY_TODOIST_ID = /^\d+$/;
+
 module.exports = class Sync {
   constructor(todoist, habitica, logger, config) {
     this.priorityMap = {
@@ -29,6 +36,7 @@ module.exports = class Sync {
     return this.getHabiticaTasks(config)
       .then(() => this.getProjects(config))
       .then((config) => this.getSyncData(config, lastRun.syncToken))
+      .then((config) => this.migrateLegacyAliases(config))
       .then((config) => this.scoreCompletedTasks(config))
       .then((config) => this.updateDailies(config))
       .then((config) => this.updateTasks(config))
@@ -37,13 +45,81 @@ module.exports = class Sync {
       .then((config) => this.syncChecklistItems(config));
   }
 
+  async migrateLegacyAliases(config) {
+    const habiticaTasks = config.habiticaTasks || [];
+    const todoistLookup = config.todoistLookup || {};
+
+    const legacyByContent = new Map();
+    for (const h of habiticaTasks) {
+      if (!h || !h.alias || !LEGACY_TODOIST_ID.test(String(h.alias))) continue;
+      const key = (h.text || "").trim();
+      if (!key) continue;
+      if (!legacyByContent.has(key)) legacyByContent.set(key, []);
+      legacyByContent.get(key).push(h);
+    }
+    if (legacyByContent.size === 0) return config;
+
+    const todoistByContent = new Map();
+    for (const t of Object.values(todoistLookup)) {
+      if (!t || !t.content || t.is_deleted) continue;
+      const key = t.content.trim();
+      if (!todoistByContent.has(key)) todoistByContent.set(key, []);
+      todoistByContent.get(key).push(t);
+    }
+
+    const aliasedTodoistIds = new Set(
+      habiticaTasks.filter((h) => h && h.alias).map((h) => String(h.alias)),
+    );
+
+    let migrated = 0;
+    for (const [content, candidates] of legacyByContent) {
+      if (candidates.length !== 1) continue;
+      const matches = (todoistByContent.get(content) || []).filter(
+        (t) => !aliasedTodoistIds.has(String(t.id)),
+      );
+      if (matches.length !== 1) continue;
+
+      const habiticaTask = candidates[0];
+      const oldAlias = String(habiticaTask.alias);
+      const newAlias = String(matches[0].id);
+      try {
+        await this.habitica.updateTaskAlias(habiticaTask._id, newAlias);
+        habiticaTask.alias = newAlias;
+        if (config.aliases) {
+          delete config.aliases[oldAlias];
+          config.aliases[newAlias] = habiticaTask._id;
+        }
+        aliasedTodoistIds.delete(oldAlias);
+        aliasedTodoistIds.add(newAlias);
+        migrated++;
+        this.logger.info(
+          `Migrated habitica alias for "${content}": ${oldAlias} -> ${newAlias}`,
+        );
+      } catch (e) {
+        this.logger.error(
+          `Failed to migrate alias for "${content}" (${oldAlias} -> ${newAlias})`,
+          e,
+        );
+      }
+    }
+    if (migrated > 0) {
+      this.logger.info(`Migrated ${migrated} legacy habitica alias(es)`);
+    }
+    return config;
+  }
+
   findOrphanedHabiticaTasks(config) {
     const todoistIds = new Set(
       Object.keys(config.todoistLookup || {}).map(String),
     );
-    return (config.habiticaTasks || []).filter(
-      (task) => task && task.alias && !todoistIds.has(String(task.alias)),
-    );
+    return (config.habiticaTasks || []).filter((task) => {
+      if (!task || !task.alias) return false;
+      const alias = String(task.alias);
+      // Legacy numeric aliases that didn't migrate (no unique content match)
+      // are unrecoverable via the API — don't keep flagging them every sync.
+      if (LEGACY_TODOIST_ID.test(alias)) return false;
+      return !todoistIds.has(alias);
+    });
   }
 
   async handleOrphanedTasks(config) {

@@ -64,6 +64,57 @@ describe("todoist", function () {
     });
   });
 
+  describe("listTasks()", function () {
+    it("returns results from a single page when next_cursor is null", function () {
+      this.axios.onGet("https://api.todoist.com/api/v1/tasks").reply(200, {
+        results: [{ id: "1" }, { id: "2" }],
+        next_cursor: null,
+      });
+      return this.todoist.listTasks().then((tasks) => {
+        expect(tasks).to.be.an("array").with.lengthOf(2);
+        expect(tasks[0].id).to.equal("1");
+      });
+    });
+
+    it("follows next_cursor across multiple pages", function () {
+      this.axios
+        .onGet("https://api.todoist.com/api/v1/tasks")
+        .replyOnce(200, {
+          results: [{ id: "1" }, { id: "2" }],
+          next_cursor: "abc",
+        })
+        .onGet("https://api.todoist.com/api/v1/tasks")
+        .replyOnce(200, {
+          results: [{ id: "3" }],
+          next_cursor: null,
+        });
+      return this.todoist.listTasks().then((tasks) => {
+        expect(tasks).to.be.an("array").with.lengthOf(3);
+        expect(tasks.map((t) => t.id)).to.deep.equal(["1", "2", "3"]);
+      });
+    });
+
+    it("propagates errors mid-pagination so callers do not see partial data", function () {
+      this.axios
+        .onGet("https://api.todoist.com/api/v1/tasks")
+        .replyOnce(200, {
+          results: [{ id: "1" }],
+          next_cursor: "abc",
+        })
+        .onGet("https://api.todoist.com/api/v1/tasks")
+        .replyOnce(500, { error: "boom" });
+      return this.todoist.listTasks().then(
+        () => {
+          throw new Error("expected listTasks to reject");
+        },
+        (err) => {
+          expect(err).to.be.an("error");
+          expect(err.statusCode).to.equal(500);
+        },
+      );
+    });
+  });
+
   describe("_requestError()", function () {
     it("should include statusCode when response is present", function () {
       const err = {

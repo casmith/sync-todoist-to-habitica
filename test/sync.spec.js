@@ -66,6 +66,11 @@ class FakeHabitica {
     await this.deleteTask(task.id);
     await this.createTask(task);
   }
+
+  async updateTaskAlias(taskId, newAlias) {
+    const task = this.tasks.find((t) => t._id === taskId);
+    if (task) task.alias = newAlias;
+  }
 }
 
 function syncDataFor(goal, completed, items) {
@@ -326,6 +331,123 @@ describe("sync", function () {
       // Task should still be created (it's not recurring without due, so it goes through updateTasks)
       const habiticaTasks = await this.habitica.listTasks();
       expect(habiticaTasks.length).to.be.greaterThan(0);
+    });
+  });
+
+  describe("migrateLegacyAliases", function () {
+    it("rewrites a legacy numeric alias when content uniquely matches one todoist task", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "9680612783",
+        text: "add codeowners",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { 9680612783: "h1" },
+        todoistLookup: {
+          "6f92FmPq24QVvmQf": {
+            id: "6f92FmPq24QVvmQf",
+            content: "add codeowners",
+          },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("6f92FmPq24QVvmQf");
+      expect(config.aliases["6f92FmPq24QVvmQf"]).to.equal("h1");
+      expect(config.aliases["9680612783"]).to.be.undefined;
+    });
+
+    it("skips when multiple habitica tasks share the same content", async function () {
+      this.habitica.tasks.push(
+        { _id: "h1", alias: "1111111111", text: "dup", checklist: [] },
+        { _id: "h2", alias: "2222222222", text: "dup", checklist: [] },
+      );
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { 1111111111: "h1", 2222222222: "h2" },
+        todoistLookup: {
+          AbCdEfGhIjKlMnOp: { id: "AbCdEfGhIjKlMnOp", content: "dup" },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("1111111111");
+      expect(this.habitica.getTask("h2").alias).to.equal("2222222222");
+    });
+
+    it("skips when multiple todoist tasks share the same content", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "1111111111",
+        text: "dup",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { 1111111111: "h1" },
+        todoistLookup: {
+          A: { id: "A", content: "dup" },
+          B: { id: "B", content: "dup" },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("1111111111");
+    });
+
+    it("does not migrate non-legacy (base32) aliases", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "AbCdEfGhIjKlMnOp",
+        text: "thing",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { AbCdEfGhIjKlMnOp: "h1" },
+        todoistLookup: {
+          AbCdEfGhIjKlMnOp: { id: "AbCdEfGhIjKlMnOp", content: "thing" },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("AbCdEfGhIjKlMnOp");
+    });
+
+    it("skips a candidate todoist task that is already aliased by another habitica task", async function () {
+      this.habitica.tasks.push(
+        { _id: "h1", alias: "1111111111", text: "thing", checklist: [] },
+        { _id: "h2", alias: "AbCdEfGhIjKlMnOp", text: "other", checklist: [] },
+      );
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { 1111111111: "h1", AbCdEfGhIjKlMnOp: "h2" },
+        todoistLookup: {
+          AbCdEfGhIjKlMnOp: { id: "AbCdEfGhIjKlMnOp", content: "thing" },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("1111111111");
+    });
+
+    it("ignores deleted todoist tasks as match candidates", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "1111111111",
+        text: "thing",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        aliases: { 1111111111: "h1" },
+        todoistLookup: {
+          AbCdEfGhIjKlMnOp: {
+            id: "AbCdEfGhIjKlMnOp",
+            content: "thing",
+            is_deleted: true,
+          },
+        },
+      };
+      await this.sync.migrateLegacyAliases(config);
+      expect(this.habitica.getTask("h1").alias).to.equal("1111111111");
     });
   });
 

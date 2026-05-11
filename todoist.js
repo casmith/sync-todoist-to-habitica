@@ -14,7 +14,7 @@ const REPEAT_WEEKDAYS = {
 };
 
 module.exports = class Todoist {
-  constructor(myAxios, logger) {
+  constructor(myAxios, logger = console) {
     this.axios = myAxios;
     this.logger = logger;
   }
@@ -80,17 +80,21 @@ module.exports = class Todoist {
       });
   }
 
-  listTasks() {
-    return this.axios
-      .get(`${baseUrl}/tasks`)
-      .then((r) => {
-        this.logger.info("Done fetching all todoist tasks");
-
-        return r.data.results;
-      })
-      .catch((err) => {
-        throw this._requestError(err);
-      });
+  async listTasks() {
+    const all = [];
+    let cursor = null;
+    try {
+      do {
+        const params = cursor ? { cursor } : {};
+        const r = await this.axios.get(`${baseUrl}/tasks`, { params });
+        all.push(...(r.data.results || []));
+        cursor = r.data.next_cursor || null;
+      } while (cursor);
+    } catch (err) {
+      throw this._requestError(err);
+    }
+    this.logger.info(`Done fetching all todoist tasks (${all.length} total)`);
+    return all;
   }
 
   sync(token) {

@@ -39,6 +39,17 @@ the `HABITICA_ORPHAN_ACTION` environment variable to one of:
 - `score` — score them in Habitica (treats them as completed)
 - `delete` — delete them from Habitica
 
+### Legacy Todoist ID migration
+
+Older Todoist task IDs were short numeric strings; current ones are base32. For
+habitica tasks created before the switchover, the alias still holds the legacy
+ID and Todoist's API no longer exposes any link between the two. To bridge the
+gap, on every sync the script tries to migrate legacy aliases by exact content
+match: when one habitica task with a legacy alias and one unaliased Todoist task
+share identical text, the habitica alias is rewritten to the new ID. Aliases
+that don't have a unique content match are left alone and exempted from orphan
+warnings (so they don't generate noise on every run).
+
 ## License
 
 ```

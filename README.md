@@ -24,6 +24,21 @@ $ node index.js
 
 That's it! You can configure it to run on a schedule with something like crontab.
 
+## Orphaned task handling
+
+Habitica tasks created by this sync may become "orphaned" if their corresponding
+Todoist task disappears outside the sync window (for example, deleted directly
+in Todoist while the sync wasn't running, or after a sync token reset). On every
+run, any habitica task whose alias does not match a current Todoist task is
+logged as a warning so you can review it.
+
+To automatically act on orphans, set `habiticaOrphanAction` in `config.json` or
+the `HABITICA_ORPHAN_ACTION` environment variable to one of:
+
+- `log` (default) — only log the orphans
+- `score` — score them in Habitica (treats them as completed)
+- `delete` — delete them from Habitica
+
 ## License
 
 ```

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.4...todoist-habitica-v1.2.0) (2026-05-11)
+
+
+### Features
+
+* log and optionally score/delete orphaned habitica tasks ([#152](https://github.com/casmith/sync-todoist-to-habitica/issues/152)) ([4081b14](https://github.com/casmith/sync-todoist-to-habitica/commit/4081b14ac6dae0ed9dafb2f068273d494a6aacaa)), closes [#150](https://github.com/casmith/sync-todoist-to-habitica/issues/150)
+
 ## [1.1.4](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.3...todoist-habitica-v1.1.4) (2026-05-07)
 
 

@@ -48,12 +48,33 @@ module.exports = class Sync {
 
   async handleOrphanedTasks(config) {
     const orphans = this.findOrphanedHabiticaTasks(config);
+    const lookupKeys = Object.keys(config.todoistLookup || {});
+    const habiticaWithAlias = (config.habiticaTasks || []).filter(
+      (t) => t && t.alias,
+    );
+    this.logger.info(
+      `[orphan-debug] todoistLookup size=${lookupKeys.length}, habiticaTasks=${(config.habiticaTasks || []).length}, with-alias=${habiticaWithAlias.length}, sync.items=${(config.sync && config.sync.items && config.sync.items.length) || 0}, todoistTasks=${(config.todoistTasks || []).length}, orphans=${orphans.length}`,
+    );
+    if (lookupKeys.length > 0) {
+      const sample = lookupKeys.slice(0, 5);
+      const last = lookupKeys.slice(-5);
+      this.logger.info(
+        `[orphan-debug] todoistLookup key sample first=${JSON.stringify(sample)} last=${JSON.stringify(last)}`,
+      );
+    }
     if (orphans.length === 0) {
       return config;
     }
     const action = (config.habiticaOrphanAction || "log").toLowerCase();
     for (const orphan of orphans) {
       const id = orphan._id || orphan.id;
+      const aliasStr = String(orphan.alias);
+      const partialMatches = lookupKeys.filter(
+        (k) => k.includes(aliasStr) || aliasStr.includes(k),
+      );
+      this.logger.warn(
+        `[orphan-debug] flagged alias=${JSON.stringify(orphan.alias)} (typeof=${typeof orphan.alias}, length=${aliasStr.length}) habiticaId=${id} text=${JSON.stringify(orphan.text)} partialMatchesInLookup=${JSON.stringify(partialMatches.slice(0, 5))}`,
+      );
       this.logger.warn(
         `Orphaned habitica task (no matching todoist task): [${id}] ${orphan.text} (alias: ${orphan.alias})`,
       );

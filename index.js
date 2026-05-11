@@ -50,6 +50,8 @@ config.todoist.unmatchedDailyTask =
   config.todoist.unmatchedDailyTask || process.env.TODOIST_UNMATCHED_DAILY_TASK;
 config.dailyGoalTaskName =
   config.dailyGoalTaskName || process.env.DAILY_GOAL_TASK_NAME;
+config.habiticaOrphanAction =
+  config.habiticaOrphanAction || process.env.HABITICA_ORPHAN_ACTION;
 
 const todoist = Todoist.from(config.todoist.token, logger);
 const habitica = Habitica.from(

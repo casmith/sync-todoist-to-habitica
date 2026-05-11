@@ -32,8 +32,51 @@ module.exports = class Sync {
       .then((config) => this.scoreCompletedTasks(config))
       .then((config) => this.updateDailies(config))
       .then((config) => this.updateTasks(config))
+      .then((config) => this.handleOrphanedTasks(config))
       .then((config) => this.checkDailyGoal(config))
       .then((config) => this.syncChecklistItems(config));
+  }
+
+  findOrphanedHabiticaTasks(config) {
+    const todoistIds = new Set(
+      Object.keys(config.todoistLookup || {}).map(String),
+    );
+    return (config.habiticaTasks || []).filter(
+      (task) => task && task.alias && !todoistIds.has(String(task.alias)),
+    );
+  }
+
+  async handleOrphanedTasks(config) {
+    const orphans = this.findOrphanedHabiticaTasks(config);
+    if (orphans.length === 0) {
+      return config;
+    }
+    const action = (config.habiticaOrphanAction || "log").toLowerCase();
+    for (const orphan of orphans) {
+      const id = orphan._id || orphan.id;
+      this.logger.warn(
+        `Orphaned habitica task (no matching todoist task): [${id}] ${orphan.text} (alias: ${orphan.alias})`,
+      );
+      if (action === "score") {
+        try {
+          await this.habitica.scoreTask(id);
+          this.logger.info(`Scored orphaned task: ${orphan.text}`);
+        } catch (e) {
+          this.logger.error(`Failed to score orphaned task: ${orphan.text}`, e);
+        }
+      } else if (action === "delete") {
+        try {
+          await this.habitica.deleteTask(id);
+          this.logger.info(`Deleted orphaned task: ${orphan.text}`);
+        } catch (e) {
+          this.logger.error(
+            `Failed to delete orphaned task: ${orphan.text}`,
+            e,
+          );
+        }
+      }
+    }
+    return config;
   }
 
   getHabiticaTasks(config) {

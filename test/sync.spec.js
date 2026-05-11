@@ -329,6 +329,84 @@ describe("sync", function () {
     });
   });
 
+  describe("handleOrphanedTasks", function () {
+    function makeConfig(habiticaTasks, todoistLookup, action) {
+      return {
+        habiticaTasks,
+        todoistLookup,
+        habiticaOrphanAction: action,
+      };
+    }
+
+    it("logs a warning for orphaned tasks", async function () {
+      const config = makeConfig(
+        [{ _id: "h1", alias: "missing-todoist-id", text: "Orphan" }],
+        {},
+      );
+      await this.sync.handleOrphanedTasks(config);
+      expect(
+        this.logger.warns.some((m) => m.includes("Orphaned habitica task")),
+      ).to.be.true;
+    });
+
+    it("skips habitica tasks without an alias", async function () {
+      const config = makeConfig([{ _id: "h1", text: "Manual task" }], {});
+      await this.sync.handleOrphanedTasks(config);
+      expect(
+        this.logger.warns.some((m) => m.includes("Orphaned habitica task")),
+      ).to.be.false;
+    });
+
+    it("does not flag habitica tasks whose alias matches a todoist task", async function () {
+      const config = makeConfig(
+        [{ _id: "h1", alias: "todo-1", text: "Existing" }],
+        { "todo-1": { id: "todo-1" } },
+      );
+      await this.sync.handleOrphanedTasks(config);
+      expect(
+        this.logger.warns.some((m) => m.includes("Orphaned habitica task")),
+      ).to.be.false;
+    });
+
+    it("scores orphaned tasks when action is 'score'", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "missing",
+        text: "Orphan",
+        checklist: [],
+      });
+      const config = makeConfig(this.habitica.tasks.slice(), {}, "score");
+      await this.sync.handleOrphanedTasks(config);
+      expect(this.habitica.getTask("h1").checked).to.equal(true);
+    });
+
+    it("deletes orphaned tasks when action is 'delete'", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "missing",
+        text: "Orphan",
+        checklist: [],
+      });
+      const config = makeConfig(this.habitica.tasks.slice(), {}, "delete");
+      await this.sync.handleOrphanedTasks(config);
+      expect(this.habitica.getTask("h1")).to.be.undefined;
+    });
+
+    it("does not score or delete when action is 'log'", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "missing",
+        text: "Orphan",
+        checklist: [],
+      });
+      const config = makeConfig(this.habitica.tasks.slice(), {}, "log");
+      await this.sync.handleOrphanedTasks(config);
+      const task = this.habitica.getTask("h1");
+      expect(task).to.exist;
+      expect(task.checked).to.be.undefined;
+    });
+  });
+
   describe("aliases via reduce", function () {
     it("builds aliases map from habitica tasks", async function () {
       // Pre-populate habitica with a known task

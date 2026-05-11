@@ -112,14 +112,30 @@ module.exports = class Sync {
     const todoistIds = new Set(
       Object.keys(config.todoistLookup || {}).map(String),
     );
-    return (config.habiticaTasks || []).filter((task) => {
-      if (!task || !task.alias) return false;
+    const activeContent = new Set(
+      Object.values(config.todoistLookup || {})
+        .filter((t) => t && t.content && !t.is_deleted)
+        .map((t) => t.content.trim()),
+    );
+    const orphans = [];
+    for (const task of config.habiticaTasks || []) {
+      if (!task || !task.alias) continue;
       const alias = String(task.alias);
-      // Legacy numeric aliases that didn't migrate (no unique content match)
-      // are unrecoverable via the API — don't keep flagging them every sync.
-      if (LEGACY_TODOIST_ID.test(alias)) return false;
-      return !todoistIds.has(alias);
-    });
+      if (LEGACY_TODOIST_ID.test(alias)) {
+        // Migration runs first; if a legacy alias is still here, no unique
+        // content match was found. If the content doesn't match ANY active
+        // Todoist task, the source is gone (deleted or completed outside the
+        // sync window) and this is a deletion candidate. If it matches one
+        // ambiguously, leave it alone — we can't tell which task is which.
+        const text = (task.text || "").trim();
+        if (text && !activeContent.has(text)) {
+          orphans.push({ task, reason: "legacy-unmigrated" });
+        }
+      } else if (!todoistIds.has(alias)) {
+        orphans.push({ task, reason: "missing" });
+      }
+    }
+    return orphans;
   }
 
   async handleOrphanedTasks(config) {
@@ -128,10 +144,14 @@ module.exports = class Sync {
       return config;
     }
     const action = (config.habiticaOrphanAction || "log").toLowerCase();
-    for (const orphan of orphans) {
+    for (const { task: orphan, reason } of orphans) {
       const id = orphan._id || orphan.id;
+      const detail =
+        reason === "legacy-unmigrated"
+          ? "legacy alias couldn't be migrated, no content match in active todoist tasks - candidate for deletion"
+          : "no matching todoist task";
       this.logger.warn(
-        `Orphaned habitica task (no matching todoist task): [${id}] ${orphan.text} (alias: ${orphan.alias})`,
+        `Orphaned habitica task (${detail}): [${id}] ${orphan.text} (alias: ${orphan.alias})`,
       );
       if (action === "score") {
         try {

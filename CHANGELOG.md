@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.2.0...todoist-habitica-v1.2.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* paginate todoist listTasks to avoid false-positive orphans ([#154](https://github.com/casmith/sync-todoist-to-habitica/issues/154)) ([9cca3f5](https://github.com/casmith/sync-todoist-to-habitica/commit/9cca3f50b0f4fafb686d1c5376e2c83164654090))
+
 ## [1.2.0](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.1.4...todoist-habitica-v1.2.0) (2026-05-11)
 
 

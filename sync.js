@@ -143,13 +143,19 @@ module.exports = class Sync {
     if (orphans.length === 0) {
       return config;
     }
-    const action = (config.habiticaOrphanAction || "log").toLowerCase();
+    const baseAction = (config.habiticaOrphanAction || "log").toLowerCase();
+    const legacyAction = (
+      config.habiticaLegacyOrphanAction ||
+      config.habiticaOrphanAction ||
+      "log"
+    ).toLowerCase();
     for (const { task: orphan, reason } of orphans) {
       const id = orphan._id || orphan.id;
-      const detail =
-        reason === "legacy-unmigrated"
-          ? "legacy alias couldn't be migrated, no content match in active todoist tasks - candidate for deletion"
-          : "no matching todoist task";
+      const isLegacy = reason === "legacy-unmigrated";
+      const action = isLegacy ? legacyAction : baseAction;
+      const detail = isLegacy
+        ? "legacy alias couldn't be migrated, no content match in active todoist tasks - candidate for deletion"
+        : "no matching todoist task";
       this.logger.warn(
         `Orphaned habitica task (${detail}): [${id}] ${orphan.text} (alias: ${orphan.alias})`,
       );

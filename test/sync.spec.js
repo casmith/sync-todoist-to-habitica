@@ -577,6 +577,75 @@ describe("sync", function () {
       );
       expect(matched).to.exist;
     });
+
+    it("scores a legacy-unmigrated orphan when habiticaLegacyOrphanAction is 'score'", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "9680612783",
+        text: "old task",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        todoistLookup: {},
+        habiticaOrphanAction: "log",
+        habiticaLegacyOrphanAction: "score",
+      };
+      await this.sync.handleOrphanedTasks(config);
+      expect(this.habitica.getTask("h1").checked).to.equal(true);
+    });
+
+    it("deletes a legacy-unmigrated orphan when habiticaLegacyOrphanAction is 'delete'", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "9680612783",
+        text: "old task",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        todoistLookup: {},
+        habiticaOrphanAction: "log",
+        habiticaLegacyOrphanAction: "delete",
+      };
+      await this.sync.handleOrphanedTasks(config);
+      expect(this.habitica.getTask("h1")).to.be.undefined;
+    });
+
+    it("legacy orphans inherit habiticaOrphanAction when no legacy override is set", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "9680612783",
+        text: "old task",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        todoistLookup: {},
+        habiticaOrphanAction: "score",
+      };
+      await this.sync.handleOrphanedTasks(config);
+      expect(this.habitica.getTask("h1").checked).to.equal(true);
+    });
+
+    it("legacy override does not affect base32 orphans", async function () {
+      this.habitica.tasks.push({
+        _id: "h1",
+        alias: "AbCdEfGhIjKlMnOp",
+        text: "active task",
+        checklist: [],
+      });
+      const config = {
+        habiticaTasks: this.habitica.tasks.slice(),
+        todoistLookup: {},
+        habiticaOrphanAction: "log",
+        habiticaLegacyOrphanAction: "delete",
+      };
+      await this.sync.handleOrphanedTasks(config);
+      const task = this.habitica.getTask("h1");
+      expect(task).to.exist;
+      expect(task.checked).to.be.undefined;
+    });
   });
 
   describe("aliases via reduce", function () {

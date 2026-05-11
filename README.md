@@ -54,6 +54,14 @@ completed outside the sync window) and you'll likely want to clean them up.
 Legacy aliases whose content matches more than one active Todoist task are
 left alone (we can't tell which is which).
 
+Legacy-unmigrated orphans can be acted on independently of regular orphans via
+`habiticaLegacyOrphanAction` in `config.json` or the
+`HABITICA_LEGACY_ORPHAN_ACTION` environment variable. It accepts the same
+`log` / `score` / `delete` values and falls back to `habiticaOrphanAction` when
+unset. Useful when you want to be conservative about regular orphans (e.g.
+`log`) but auto-handle the legacy ones (e.g. `score` since they were valid
+tasks at one point, or `delete` to clean them out).
+
 ## License
 
 ```

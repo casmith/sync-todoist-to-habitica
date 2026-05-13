@@ -52,6 +52,9 @@ config.dailyGoalTaskName =
   config.dailyGoalTaskName || process.env.DAILY_GOAL_TASK_NAME;
 config.habiticaOrphanAction =
   config.habiticaOrphanAction || process.env.HABITICA_ORPHAN_ACTION;
+config.habiticaLegacyOrphanAction =
+  config.habiticaLegacyOrphanAction ||
+  process.env.HABITICA_LEGACY_ORPHAN_ACTION;
 
 const todoist = Todoist.from(config.todoist.token, logger);
 const habitica = Habitica.from(

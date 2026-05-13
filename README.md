@@ -46,9 +46,21 @@ habitica tasks created before the switchover, the alias still holds the legacy
 ID and Todoist's API no longer exposes any link between the two. To bridge the
 gap, on every sync the script tries to migrate legacy aliases by exact content
 match: when one habitica task with a legacy alias and one unaliased Todoist task
-share identical text, the habitica alias is rewritten to the new ID. Aliases
-that don't have a unique content match are left alone and exempted from orphan
-warnings (so they don't generate noise on every run).
+share identical text, the habitica alias is rewritten to the new ID. Legacy
+aliases whose content doesn't match any active Todoist task are flagged as
+orphans with a `legacy alias couldn't be migrated... candidate for deletion`
+note — those are habitica tasks whose Todoist counterpart is gone (deleted or
+completed outside the sync window) and you'll likely want to clean them up.
+Legacy aliases whose content matches more than one active Todoist task are
+left alone (we can't tell which is which).
+
+Legacy-unmigrated orphans can be acted on independently of regular orphans via
+`habiticaLegacyOrphanAction` in `config.json` or the
+`HABITICA_LEGACY_ORPHAN_ACTION` environment variable. It accepts the same
+`log` / `score` / `delete` values and falls back to `habiticaOrphanAction` when
+unset. Useful when you want to be conservative about regular orphans (e.g.
+`log`) but auto-handle the legacy ones (e.g. `score` since they were valid
+tasks at one point, or `delete` to clean them out).
 
 ## License
 

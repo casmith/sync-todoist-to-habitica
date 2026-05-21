@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.2.1...todoist-habitica-v1.3.0) (2026-05-21)
+
+
+### Features
+
+* flag unmigratable legacy aliases as orphan candidates ([#156](https://github.com/casmith/sync-todoist-to-habitica/issues/156)) ([e0eef89](https://github.com/casmith/sync-todoist-to-habitica/commit/e0eef89056f7f0e23d09ccd2ff1d62d52b3b970c))
+
+
+### Bug Fixes
+
+* **deps:** bump axios from 1.16.0 to 1.16.1 ([#159](https://github.com/casmith/sync-todoist-to-habitica/issues/159)) ([a93cd6d](https://github.com/casmith/sync-todoist-to-habitica/commit/a93cd6dcab0e4c0c1ac6d4243ca28a9e1cab8b6e))
+
 ## [1.2.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.2.0...todoist-habitica-v1.2.1) (2026-05-11)
 
 

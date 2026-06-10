@@ -24,7 +24,7 @@
     "lint-staged": "^17.0.7",
     "mocha": "^11.7.6",
     "nyc": "^18.0.0",
-    "prettier": "^3.8.3",
+    "prettier": "^3.8.4",
     "sinon": "^22.0.0"
   },
   "overrides": {

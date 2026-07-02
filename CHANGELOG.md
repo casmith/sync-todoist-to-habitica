@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.3.1...todoist-habitica-v1.3.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* **deps:** bump axios from 1.18.0 to 1.18.1 ([#170](https://github.com/casmith/sync-todoist-to-habitica/issues/170)) ([ab3039d](https://github.com/casmith/sync-todoist-to-habitica/commit/ab3039da7e83aabb23a3c84b035abd4332f1fecc))
+* **deps:** bump uuid and istanbul-lib-processinfo ([#172](https://github.com/casmith/sync-todoist-to-habitica/issues/172)) ([0410a83](https://github.com/casmith/sync-todoist-to-habitica/commit/0410a83e31ea5c4e2a7785aa549e7843943bbbfc))
+* **deps:** bump uuid from 14.0.0 to 14.0.1 ([#168](https://github.com/casmith/sync-todoist-to-habitica/issues/168)) ([09ce726](https://github.com/casmith/sync-todoist-to-habitica/commit/09ce726583a55171ee555b6803e91c20dce2bf90))
+
 ## [1.3.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.3.0...todoist-habitica-v1.3.1) (2026-06-19)
 
 

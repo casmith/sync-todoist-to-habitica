@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.2](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.3.1...todoist-habitica-v1.3.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **deps:** bump axios from 1.18.0 to 1.18.1 ([#170](https://github.com/casmith/sync-todoist-to-habitica/issues/170)) ([ab3039d](https://github.com/casmith/sync-todoist-to-habitica/commit/ab3039da7e83aabb23a3c84b035abd4332f1fecc))
+* **deps:** bump axios from 1.18.1 to 1.19.0 ([#180](https://github.com/casmith/sync-todoist-to-habitica/issues/180)) ([7f7a08d](https://github.com/casmith/sync-todoist-to-habitica/commit/7f7a08d71df137791b37fad656d72586d084c009))
+* **deps:** bump axios from 1.19.0 to 1.20.0 ([#184](https://github.com/casmith/sync-todoist-to-habitica/issues/184)) ([188c767](https://github.com/casmith/sync-todoist-to-habitica/commit/188c76750c9e536a4848fc73ccedae9e50d4caef))
+* **deps:** bump brace-expansion ([#181](https://github.com/casmith/sync-todoist-to-habitica/issues/181)) ([9e9cfe1](https://github.com/casmith/sync-todoist-to-habitica/commit/9e9cfe1b902a31b79f91fa20962b3752b245e7c0))
+* **deps:** bump uuid and istanbul-lib-processinfo ([#172](https://github.com/casmith/sync-todoist-to-habitica/issues/172)) ([0410a83](https://github.com/casmith/sync-todoist-to-habitica/commit/0410a83e31ea5c4e2a7785aa549e7843943bbbfc))
+* **deps:** bump uuid from 14.0.0 to 14.0.1 ([#168](https://github.com/casmith/sync-todoist-to-habitica/issues/168)) ([09ce726](https://github.com/casmith/sync-todoist-to-habitica/commit/09ce726583a55171ee555b6803e91c20dce2bf90))
+* **deps:** bump uuid from 14.0.1 to 14.0.2 ([#183](https://github.com/casmith/sync-todoist-to-habitica/issues/183)) ([8ed08bb](https://github.com/casmith/sync-todoist-to-habitica/commit/8ed08bb8ed9a73235434c033992a0d42960f3577))
+
 ## [1.3.1](https://github.com/casmith/sync-todoist-to-habitica/compare/todoist-habitica-v1.3.0...todoist-habitica-v1.3.1) (2026-06-19)
 
 
